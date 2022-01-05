@@ -1,0 +1,58 @@
+openapi: 3.1.0
+info:
+  title: convention.ninja API
+  version: 0.0.1-alpha
+  description: |
+    Convention ninja is a community for convention volunteers and a management suite for convention back of house
+paths:
+  /user:
+    summary: Details about the currently authenticated user
+    get:
+      summary: Gets the details of the currently logged in user
+      responses:
+        401:
+          description: Not Authorized
+        200:
+          $ref: '#/components/responses/userResponse'
+  /orgs:
+    get:
+      summary: Gets the list of orgs registered to the site
+      responses:
+        401:
+          description: Not Authorized
+        200:
+          $ref: '#/components/responses/getOrdsResponse'
+
+components:
+  responses:
+    getOrgsResponse:
+      description: Gets the list of orgs registered to the site
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              owner:
+                type: number
+    userResponse:
+      description: Details about the currently authenticated user
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - displayName
+            properties:
+              name:
+                type: string
+              displayName:
+                type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []

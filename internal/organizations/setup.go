@@ -10,7 +10,16 @@ func SetupRoutes(grp fiber.Router) {
 	orgGrp.Get("/", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
+
+	orgGrp.Post("/", func(c *fiber.Ctx) error {
+		return errors.New("not implemented") // TODO
+	})
+
 	orgGrp.Get("/:id", func(c *fiber.Ctx) error {
+		return errors.New("not implemented") // TODO
+	})
+
+	orgGrp.Delete("/:id", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
 }

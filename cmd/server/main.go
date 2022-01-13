@@ -41,20 +41,17 @@ func main() {
 
 	app := fiber.New()
 
-	ignoreList := auth.NewIgnoreList()
-
 	app.Use(auth.New(auth.Config{
 		FirebaseApp: firebaseApp,
-		IgnoreList:  ignoreList,
 	}))
 
 	app.Use(usersMiddleware.New())
 
 	apiGrp := app.Group("api/")
-	organizations.SetupRoutes(apiGrp, ignoreList)
-	inventory.SetupRoutes(apiGrp, ignoreList)
-	events.SetupRoutes(apiGrp, ignoreList)
-	users.SetupRoutes(apiGrp, ignoreList)
+	organizations.SetupRoutes(apiGrp)
+	inventory.SetupRoutes(apiGrp)
+	events.SetupRoutes(apiGrp)
+	users.SetupRoutes(apiGrp)
 
 	log.Fatal(app.Listen(":" + port))
 }

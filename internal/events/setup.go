@@ -1,12 +1,11 @@
 package events
 
 import (
-	"convention.ninja/internal/auth"
 	"errors"
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupRoutes(grp fiber.Router, _ *auth.IgnoreListBuilder) {
+func SetupRoutes(grp fiber.Router) {
 	eventsGrp := grp.Group("/orgs/:orgId/events")
 
 	eventsGrp.Get("/", func(c *fiber.Ctx) error {

@@ -1,11 +1,16 @@
 package data
 
-import "convention.ninja/internal/data"
+import (
+	"convention.ninja/internal/data"
+	userData "convention.ninja/internal/users/data"
+)
 
 type Organization struct {
 	data.SnowflakeModel
-	Name    string
-	OwnerId int64
+	Name           string
+	NormalizedName string
+	OwnerId        int64
+	Owner          userData.User
 }
 
 func init() {

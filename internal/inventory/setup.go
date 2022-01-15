@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"convention.ninja/internal/inventory/business"
 	"errors"
 	"github.com/gofiber/fiber/v2"
 )
@@ -71,96 +72,104 @@ func setupManifests(manifestsGrp fiber.Router) {
 
 func setupAssets(assetsGrp fiber.Router) {
 	assetsGrp.Get("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.GetAssets(c)
 	})
 
 	assetsGrp.Post("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.CreateAsset(c)
 	})
 
 	assetsGrp.Get("/:assetId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.GetAsset(c)
 	})
 
 	assetsGrp.Patch("/:assetId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.UpdateAsset(c)
 	})
 
-	assetsGrp.Put("/:assetId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+	assetsGrp.Get("/:assetId/barcodes", func(c *fiber.Ctx) error {
+		return business.GetAssetBarcodes(c)
+	})
+
+	assetsGrp.Post("/:assetId/barcodes", func(c *fiber.Ctx) error {
+		return business.CreateAssetBarcode(c)
+	})
+
+	assetsGrp.Delete("/:assetId/barcodes/:barcodeId", func(c *fiber.Ctx) error {
+		return business.DeleteAssetBarcode(c)
 	})
 
 	assetsGrp.Delete("/:assetId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.DeleteAsset(c)
 	})
 
 	assetsGrp.Get("/barcode/:barcode", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.GetAssetByBarcode(c)
 	})
 }
 
 func setupCategories(categoriesGrp fiber.Router) {
 	categoriesGrp.Get("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.GetCategories(c)
 	})
 
 	categoriesGrp.Post("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.CreateCategory(c)
 	})
 
 	categoriesGrp.Get("/:categoryId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.GetCategory(c)
 	})
 
 	categoriesGrp.Put("/:categoryId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.UpdateCategory(c)
 	})
 
 	categoriesGrp.Delete("/:categoryId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.DeleteCategory(c)
 	})
 }
 
 func setupMfg(mfgGrp fiber.Router) {
 	mfgGrp.Get("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.GetManufacturers(c)
 	})
 
 	mfgGrp.Post("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.CreateManufacturer(c)
 	})
 
 	mfgGrp.Get("/:mfgId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.GetManufacturer(c)
 	})
 
 	mfgGrp.Put("/:mfgId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.UpdateManufacturer(c)
 	})
 
 	mfgGrp.Delete("/:mfgId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.DeleteManufacturer(c)
 	})
 }
 
 func setupModels(modelsGrp fiber.Router) {
 	modelsGrp.Get("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.GetModels(c)
 	})
 
 	modelsGrp.Post("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.CreateModel(c)
 	})
 
 	modelsGrp.Get("/:modelId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.GetModel(c)
 	})
 
 	modelsGrp.Put("/:modelId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.UpdateModel(c)
 	})
 
 	modelsGrp.Delete("/:modelId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
+		return business.DeleteModeL(c)
 	})
 }

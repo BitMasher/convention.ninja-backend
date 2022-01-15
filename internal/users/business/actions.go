@@ -30,11 +30,11 @@ func CreateUser(c *fiber.Ctx) error {
 
 	var req CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Bad request")
+		return c.Status(fiber.StatusBadRequest).SendString("bad request")
 	}
 
 	if len(req.Name) == 0 || len(req.Email) == 0 || !strings.Contains(req.Email, "@") {
-		return c.Status(fiber.StatusBadRequest).SendString("Bad request")
+		return c.Status(fiber.StatusBadRequest).SendString("bad request")
 	}
 	if len(req.DisplayName) == 0 {
 		req.DisplayName = req.Name
@@ -46,10 +46,15 @@ func CreateUser(c *fiber.Ctx) error {
 		},
 		Name:          req.Name,
 		DisplayName:   req.DisplayName,
-		Email:         req.Email,
+		Email:         strings.ToLower(req.Email),
 		EmailVerified: false,
 		FirebaseId:    c.Locals("idtoken").(auth.IdToken).UserId,
 	}
+
+	if data.GetConn().First(&userData.User{}, "email=?", user.Email).RowsAffected > 0 {
+		return c.Status(fiber.StatusConflict).SendString("email already associated with existing user")
+	}
+
 	// TODO send email verification
 	data.GetConn().Create(&user)
 	return c.Status(fiber.StatusOK).JSON(&user)
@@ -72,7 +77,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	if guards.SameUserGuard(c.Params("id", ""), c) {
 		var req UpdateUserRequest
 		if err := c.BodyParser(&req); err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString("Bad request")
+			return c.Status(fiber.StatusBadRequest).SendString("bad request")
 		}
 		if len(req.Name) == 0 && len(req.DisplayName) == 0 && len(req.Email) == 0 {
 			return c.Status(fiber.StatusOK).SendString("")

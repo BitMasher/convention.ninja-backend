@@ -1,6 +1,7 @@
 package guards
 
 import (
+	"convention.ninja/internal/organizations/data"
 	userData "convention.ninja/internal/users/data"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
@@ -13,6 +14,14 @@ func SameUserGuard(testUser string, c *fiber.Ctx) bool {
 				return true
 			}
 		}
+	}
+	return false
+}
+
+// TODO implement RBAC for organizations
+func IsAuthorizedToOrg(org *data.Organization, c *fiber.Ctx) bool {
+	if org.OwnerId == c.Locals("user").(*userData.User).ID {
+		return true
 	}
 	return false
 }

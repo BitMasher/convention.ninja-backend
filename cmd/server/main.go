@@ -24,14 +24,13 @@ func init() {
 	}
 
 	firebaseApp = app
-}
-
-func main() {
-
-	err := data.Connect("...dsn here")
+	err = data.Connect(os.Getenv("SQL_DSN"))
 	if err != nil {
 		panic(err)
 	}
+}
+
+func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -39,7 +38,9 @@ func main() {
 		log.Printf("Defaulting to port %s", port)
 	}
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		DisableStartupMessage: true,
+	})
 
 	app.Use(auth.New(auth.Config{
 		FirebaseApp: firebaseApp,

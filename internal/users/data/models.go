@@ -11,7 +11,6 @@ type User struct {
 	FirebaseId    string
 }
 
-// TODO this should not run in server mode, should be part of deployment
-func init() {
+func Migrate() {
 	_ = data.GetConn().AutoMigrate(&User{})
 }

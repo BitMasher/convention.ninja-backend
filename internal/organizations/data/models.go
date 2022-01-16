@@ -13,6 +13,6 @@ type Organization struct {
 	Owner          userData.User
 }
 
-func init() {
+func Migrate() {
 	_ = data.GetConn().AutoMigrate(&Organization{})
 }

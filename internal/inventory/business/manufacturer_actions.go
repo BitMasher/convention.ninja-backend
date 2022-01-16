@@ -23,7 +23,7 @@ func GetManufacturers(c *fiber.Ctx) error {
 }
 
 type CreateManufacturerRequest struct {
-	Name string
+	Name string `json:"name"`
 }
 
 func CreateManufacturer(c *fiber.Ctx) error {
@@ -83,7 +83,7 @@ func GetManufacturer(c *fiber.Ctx) error {
 }
 
 type UpdateManufacturerRequest struct {
-	Name string
+	Name string `json:"name"`
 }
 
 func UpdateManufacturer(c *fiber.Ctx) error {

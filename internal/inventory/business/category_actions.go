@@ -23,7 +23,7 @@ func GetCategories(c *fiber.Ctx) error {
 }
 
 type CreateCategoryRequest struct {
-	Name string
+	Name string `json:"name"`
 }
 
 func CreateCategory(c *fiber.Ctx) error {
@@ -83,7 +83,7 @@ func GetCategory(c *fiber.Ctx) error {
 }
 
 type UpdateCategoryRequest struct {
-	Name string
+	Name string `json:"name"`
 }
 
 func UpdateCategory(c *fiber.Ctx) error {

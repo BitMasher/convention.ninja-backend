@@ -32,9 +32,10 @@ type Model struct {
 
 type AssetTag struct {
 	data.SnowflakeModel
-	TagId   string
-	AssetId int64
-	Asset   Asset
+	TagId          string
+	AssetId        int64
+	Asset          Asset
+	OrganizationId int64
 }
 
 type Asset struct {

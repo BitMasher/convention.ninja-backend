@@ -25,9 +25,9 @@ func GetModels(c *fiber.Ctx) error {
 }
 
 type CreateModelRequest struct {
-	Name           string
-	ManufacturerId int64
-	CategoryId     int64
+	Name           string `json:"name"`
+	ManufacturerId int64  `json:"manufacturerId"`
+	CategoryId     int64  `json:"categoryId"`
 }
 
 func CreateModel(c *fiber.Ctx) error {
@@ -104,9 +104,9 @@ func GetModel(c *fiber.Ctx) error {
 }
 
 type UpdateModelRequest struct {
-	Name           string
-	ManufacturerId int64
-	CategoryId     int64
+	Name           string `json:"name"`
+	ManufacturerId int64  `json:"manufacturerId"`
+	CategoryId     int64  `json:"categoryId"`
 }
 
 func UpdateModel(c *fiber.Ctx) error {

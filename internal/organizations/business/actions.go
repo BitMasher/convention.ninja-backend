@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func GetOrganizations(c *fiber.Ctx) error {
+func GetOrganizations(_ *fiber.Ctx) error {
 	return errors.New("not implemented") // TODO
 }
 
@@ -58,7 +58,7 @@ func GetOrganization(c *fiber.Ctx) error {
 }
 
 type UpdateOrganizationRequest struct {
-	Name string
+	Name string `json:"name"`
 }
 
 func UpdateOrganization(c *fiber.Ctx) error {

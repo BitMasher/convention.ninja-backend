@@ -4,6 +4,7 @@ import (
 	"context"
 	firebase "firebase.google.com/go"
 	"github.com/gofiber/fiber/v2"
+	"strings"
 )
 
 type Config struct {
@@ -30,6 +31,9 @@ func New(cfg Config) fiber.Handler {
 		if len(idToken) == 0 {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired Token")
 		}
+		if strings.Contains(idToken, " ") {
+			idToken = strings.Split(idToken, " ")[1]
+		}
 
 		client, err := cfg.FirebaseApp.Auth(context.Background())
 		if err != nil {
@@ -44,6 +48,18 @@ func New(cfg Config) fiber.Handler {
 			Email:  token.Claims["email"].(string),
 			UserId: token.UID,
 		})
+		return c.Next()
+	}
+}
+
+func NewUserRequired(next ...fiber.Handler) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if c.Locals("user") == nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("User registration incomplete")
+		}
+		if len(next) > 0 {
+			return next[0](c)
+		}
 		return c.Next()
 	}
 }

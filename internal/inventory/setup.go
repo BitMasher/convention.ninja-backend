@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"convention.ninja/internal/auth"
 	"convention.ninja/internal/inventory/business"
 	"errors"
 	"github.com/gofiber/fiber/v2"
@@ -8,6 +9,7 @@ import (
 
 func SetupRoutes(grp fiber.Router) {
 	inventoryGrp := grp.Group("/orgs/:orgId/inventory")
+	inventoryGrp.Use(auth.NewUserRequired())
 	modelsGrp := inventoryGrp.Group("/models")
 	setupModels(modelsGrp)
 

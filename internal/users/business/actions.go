@@ -48,7 +48,12 @@ func CreateUser(c *fiber.Ctx) error {
 		DisplayName:   req.DisplayName,
 		Email:         strings.ToLower(req.Email),
 		EmailVerified: false,
-		FirebaseId:    c.Locals("idtoken").(auth.IdToken).UserId,
+		FirebaseId:    c.Locals("idtoken").(*auth.IdToken).UserId,
+	}
+
+	var exists userData.User
+	if data.GetConn().First(&exists, "firebase_id=?", c.Locals("idtoken").(*auth.IdToken).UserId).RowsAffected > 0 {
+		return c.Status(fiber.StatusOK).JSON(&exists)
 	}
 
 	if data.GetConn().First(&userData.User{}, "email=?", user.Email).RowsAffected > 0 {
@@ -60,8 +65,12 @@ func CreateUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(&user)
 }
 
+func GetMe(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusOK).JSON(c.Locals("user").(*userData.User))
+}
+
 func GetUser(c *fiber.Ctx) error {
-	if guards.SameUserGuard(c.Params("id", ""), c) {
+	if guards.SameUserGuard(c.Params("userId", ""), c) {
 		return c.Status(fiber.StatusOK).JSON(c.Locals("user").(*userData.User))
 	}
 	return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized request")
@@ -74,7 +83,7 @@ type UpdateUserRequest struct {
 }
 
 func UpdateUser(c *fiber.Ctx) error {
-	if guards.SameUserGuard(c.Params("id", ""), c) {
+	if guards.SameUserGuard(c.Params("userId", ""), c) {
 		var req UpdateUserRequest
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString("bad request")
@@ -99,7 +108,7 @@ func UpdateUser(c *fiber.Ctx) error {
 }
 
 func DeleteUser(c *fiber.Ctx) error {
-	if guards.SameUserGuard(c.Params("id", ""), c) {
+	if guards.SameUserGuard(c.Params("userId", ""), c) {
 		user := c.Locals("user").(*userData.User)
 		client, err := auth.GetConfig().FirebaseApp.Auth(context.Background())
 		if err != nil {

@@ -4,11 +4,11 @@ import "convention.ninja/internal/data"
 
 type User struct {
 	data.SnowflakeModel
-	Name          string
-	DisplayName   string
-	Email         string
-	EmailVerified bool
-	FirebaseId    string
+	Name          string `json:"-"`
+	DisplayName   string `json:"displayName"`
+	Email         string `json:"-"`
+	EmailVerified bool   `json:"-"`
+	FirebaseId    string `json:"-"`
 }
 
 func Migrate() {

@@ -13,7 +13,7 @@ func New() fiber.Handler {
 		if idToken_ == nil {
 			return c.Next()
 		}
-		if idToken, ok := idToken_.(auth.IdToken); ok {
+		if idToken, ok := idToken_.(*auth.IdToken); ok {
 			if len(idToken.UserId) == 0 {
 				return c.Next()
 			}

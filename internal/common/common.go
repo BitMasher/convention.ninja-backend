@@ -9,7 +9,6 @@ import (
 )
 
 func GetOrgAndAuthorize(c *fiber.Ctx) (*data.Organization, bool) {
-	var org data.Organization
 	orgId_ := c.Params("orgId", "")
 	if orgId_ == "" {
 		return nil, true
@@ -18,6 +17,7 @@ func GetOrgAndAuthorize(c *fiber.Ctx) (*data.Organization, bool) {
 	if err != nil {
 		return nil, true
 	}
+	var org data.Organization
 	if data2.GetConn().First(&org, orgId).RowsAffected == 0 {
 		return nil, true
 	}

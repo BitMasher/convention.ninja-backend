@@ -1,6 +1,7 @@
 package main
 
 import (
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"context"
 	"convention.ninja/internal/auth"
 	"convention.ninja/internal/data"
@@ -10,24 +11,34 @@ import (
 	"convention.ninja/internal/users"
 	usersMiddleware "convention.ninja/internal/users/middleware"
 	firebase "firebase.google.com/go"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 	"log"
 	"os"
 )
 
 var firebaseApp *firebase.App
 
-func init() {
-	app, err := firebase.NewApp(context.Background(), nil)
+func getSecret(secretKey string) (string, error) {
+	ctx := context.Background()
+	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		panic(err)
+	}
+	defer client.Close()
+
+	accessRequest := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: secretKey + "/versions/latest",
 	}
 
-	firebaseApp = app
-	err = data.Connect(os.Getenv("SQL_DSN"))
+	// Call the API.
+	result, err := client.AccessSecretVersion(ctx, accessRequest)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to access secret version: %v", err)
 	}
+	return string(result.Payload.Data), nil
 }
 
 func main() {
@@ -38,9 +49,32 @@ func main() {
 		log.Printf("Defaulting to port %s", port)
 	}
 
+	fbApp, err := firebase.NewApp(context.Background(), nil)
+	if err != nil {
+		panic(err)
+	}
+
+	firebaseApp = fbApp
+	dsn := os.Getenv("SQL_DSN")
+	if dsn == "" {
+		dsn, err = getSecret(os.Getenv("SQL_DSN_KEY"))
+		if err != nil {
+			panic(err)
+		}
+	}
+	err = data.Connect(dsn)
+	if err != nil {
+		panic(err)
+	}
+
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
+
+	app.Use(cors.New(cors.Config{
+		AllowCredentials: true,
+		MaxAge:           86400,
+	}))
 
 	app.Use(auth.New(auth.Config{
 		FirebaseApp: firebaseApp,

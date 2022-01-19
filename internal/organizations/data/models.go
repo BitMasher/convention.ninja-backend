@@ -7,10 +7,10 @@ import (
 
 type Organization struct {
 	data.SnowflakeModel
-	Name           string
-	NormalizedName string
-	OwnerId        int64
-	Owner          userData.User
+	Name           string        `json:"name,omitempty"`
+	NormalizedName string        `json:"-"`
+	OwnerId        int64         `json:"ownerId,string"`
+	Owner          userData.User `json:"-"`
 }
 
 func Migrate() {

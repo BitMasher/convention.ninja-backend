@@ -2,9 +2,8 @@ package business
 
 import (
 	"convention.ninja/internal/common"
-	data2 "convention.ninja/internal/data"
 	data3 "convention.ninja/internal/inventory/data"
-	"convention.ninja/internal/snowflake"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
@@ -17,8 +16,11 @@ func GetManufacturers(c *fiber.Ctx) error {
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
-	var manufacturers []data3.Manufacturer
-	data2.GetConn().Where(&data3.Manufacturer{OrganizationId: org.ID}).Find(&manufacturers)
+	manufacturers, err := data3.GetManufacturersByOrganization(org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetManufacturers: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&manufacturers)
 }
 
@@ -39,20 +41,24 @@ func CreateManufacturer(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	count := int64(0)
-	data2.GetConn().Where(&data3.Manufacturer{Name: req.Name, OrganizationId: org.ID}).Count(&count)
-	if count > 0 {
+	exists, err := data3.ManufacturerExistsInOrg(org.ID, req.Name)
+	if err != nil {
+		fmt.Printf("got error in CreateManufacturer: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if exists {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 
 	mfg := data3.Manufacturer{
-		SnowflakeModel: data2.SnowflakeModel{
-			ID: snowflake.GetNode().Generate().Int64(),
-		},
 		Name:           req.Name,
 		OrganizationId: org.ID,
 	}
-	data2.GetConn().Create(&mfg)
+	err = data3.CreateManufacturer(&mfg)
+	if err != nil {
+		fmt.Printf("got error in CreateManufacturer: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&mfg)
 }
 
@@ -73,10 +79,12 @@ func GetManufacturer(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var mfg data3.Manufacturer
-	if data2.GetConn().Where(&data3.Manufacturer{
-		OrganizationId: org.ID,
-	}).First(&mfg, mfgId).RowsAffected == 0 {
+	mfg, err := data3.GetManufacturerById(mfgId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetManufacturer: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if mfg == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	return c.Status(fiber.StatusOK).JSON(&mfg)
@@ -107,19 +115,28 @@ func UpdateManufacturer(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var mfg data3.Manufacturer
-	if data2.GetConn().Where(&data3.Manufacturer{
-		OrganizationId: org.ID,
-	}).First(&mfg, mfgId).RowsAffected == 0 {
+	mfg, err := data3.GetManufacturerById(mfgId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in UpdateManufacturer: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if mfg == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	count := int64(0)
-	data2.GetConn().Where(&data3.Manufacturer{Name: req.Name, OrganizationId: org.ID}).Count(&count)
-	if count > 0 {
+	exists, err := data3.ManufacturerExistsInOrg(org.ID, req.Name)
+	if err != nil {
+		fmt.Printf("got error in UpdateManufacturer: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if exists {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	mfg.Name = req.Name
-	data2.GetConn().Save(&mfg)
+	err = data3.UpdateManufacturer(mfg)
+	if err != nil {
+		fmt.Printf("got error in UpdateManufacturer: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&mfg)
 }
 
@@ -139,12 +156,18 @@ func DeleteManufacturer(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var mfg data3.Manufacturer
-	if data2.GetConn().Where(&data3.Manufacturer{
-		OrganizationId: org.ID,
-	}).First(&mfg, mfgId).RowsAffected == 0 {
+	mfg, err := data3.GetManufacturerById(mfgId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in DeleteManufacturer: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if mfg == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	data2.GetConn().Delete(&mfg)
+	err = data3.DeleteManufacturer(mfg)
+	if err != nil {
+		fmt.Printf("got error in DeleteManufacturer: %s\n", err)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.SendStatus(fiber.StatusOK)
 }

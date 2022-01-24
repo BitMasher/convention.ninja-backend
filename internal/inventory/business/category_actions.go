@@ -2,9 +2,8 @@ package business
 
 import (
 	"convention.ninja/internal/common"
-	data2 "convention.ninja/internal/data"
 	data3 "convention.ninja/internal/inventory/data"
-	"convention.ninja/internal/snowflake"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
@@ -17,8 +16,11 @@ func GetCategories(c *fiber.Ctx) error {
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
-	var categories []data3.Category
-	data2.GetConn().Where(&data3.Category{OrganizationId: org.ID}).Find(&categories)
+	categories, err := data3.GetCategoriesByOrganization(org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetCategories: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&categories)
 }
 
@@ -39,20 +41,24 @@ func CreateCategory(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	count := int64(0)
-	data2.GetConn().Where(&data3.Category{Name: req.Name, OrganizationId: org.ID}).Count(&count)
-	if count > 0 {
+	exists, err := data3.CategoryExistsInOrg(org.ID, req.Name)
+	if err != nil {
+		fmt.Printf("got error in CreateCategory: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if exists {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 
 	cat := data3.Category{
-		SnowflakeModel: data2.SnowflakeModel{
-			ID: snowflake.GetNode().Generate().Int64(),
-		},
 		Name:           req.Name,
 		OrganizationId: org.ID,
 	}
-	data2.GetConn().Create(&cat)
+	err = data3.CreateCategory(&cat)
+	if err != nil {
+		fmt.Printf("got error in CreateCategory: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&cat)
 }
 
@@ -73,13 +79,15 @@ func GetCategory(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var mfg data3.Category
-	if data2.GetConn().Where(&data3.Category{
-		OrganizationId: org.ID,
-	}).First(&mfg, catId).RowsAffected == 0 {
+	cat, err := data3.GetCategoryById(catId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetCategory: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if cat == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	return c.Status(fiber.StatusOK).JSON(&mfg)
+	return c.Status(fiber.StatusOK).JSON(&cat)
 }
 
 type UpdateCategoryRequest struct {
@@ -107,19 +115,28 @@ func UpdateCategory(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var cat data3.Category
-	if data2.GetConn().Where(&data3.Category{
-		OrganizationId: org.ID,
-	}).First(&cat, catId).RowsAffected == 0 {
+	cat, err := data3.GetCategoryById(catId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in UpdateCategory: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if cat == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	count := int64(0)
-	data2.GetConn().Where(&data3.Category{Name: req.Name, OrganizationId: org.ID}).Count(&count)
-	if count > 0 {
+	exists, err := data3.CategoryExistsInOrg(org.ID, req.Name)
+	if err != nil {
+		fmt.Printf("got error in UpdateCategory: %s\n", err) // TODO implement logging system`
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if exists {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	cat.Name = req.Name
-	data2.GetConn().Save(&cat)
+	err = data3.UpdateCategory(cat)
+	if err != nil {
+		fmt.Printf("got error in UpdateCategory: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&cat)
 }
 
@@ -139,12 +156,18 @@ func DeleteCategory(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var cat data3.Category
-	if data2.GetConn().Where(&data3.Category{
-		OrganizationId: org.ID,
-	}).First(&cat, catId).RowsAffected == 0 {
+	cat, err := data3.GetCategoryById(catId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in DeleteCategory: %s\n", err)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if cat == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	data2.GetConn().Delete(&cat)
+	err = data3.DeleteCategory(cat)
+	if err != nil {
+		fmt.Printf("got error in UpdateCategory: %s\n", err)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.SendStatus(fiber.StatusOK)
 }

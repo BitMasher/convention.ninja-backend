@@ -47,11 +47,3 @@ type Asset struct {
 	Organization   data2.Organization `json:"-"`
 	AssetTags      []AssetTag         `json:"assetTags,omitempty"`
 }
-
-func Migrate() {
-	_ = data.GetConn().AutoMigrate(&Manufacturer{})
-	_ = data.GetConn().AutoMigrate(&Category{})
-	_ = data.GetConn().AutoMigrate(&Model{})
-	_ = data.GetConn().AutoMigrate(&Asset{})
-	_ = data.GetConn().AutoMigrate(&AssetTag{})
-}

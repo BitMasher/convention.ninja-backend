@@ -2,9 +2,9 @@ package business
 
 import (
 	"convention.ninja/internal/common"
-	data2 "convention.ninja/internal/data"
 	"convention.ninja/internal/inventory/data"
-	"convention.ninja/internal/snowflake"
+	"encoding/json"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
@@ -17,17 +17,18 @@ func GetModels(c *fiber.Ctx) error {
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
-	var models []data.Model
-	data2.GetConn().Where(&data.Model{
-		OrganizationId: org.ID,
-	}).Joins("Category").Joins("Manufacturer").Find(&models)
+	models, err := data.GetModelsExpandedByOrganization(org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetModels: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&models)
 }
 
 type CreateModelRequest struct {
-	Name           string `json:"name"`
-	ManufacturerId int64  `json:"manufacturerId"`
-	CategoryId     int64  `json:"categoryId"`
+	Name           string      `json:"name"`
+	ManufacturerId json.Number `json:"manufacturerId,string"`
+	CategoryId     json.Number `json:"categoryId,string"`
 }
 
 func CreateModel(c *fiber.Ctx) error {
@@ -48,32 +49,54 @@ func CreateModel(c *fiber.Ctx) error {
 	if len(req.Name) == 0 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-
-	var count int64
-	if data2.GetConn().Where(&data.Model{OrganizationId: org.ID, Name: req.Name}).Count(&count); count > 0 {
+	exists, err := data.ModelExistsInOrg(org.ID, req.Name)
+	if err != nil {
+		fmt.Printf("got error in CreateModel: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if exists {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 
-	if data2.GetConn().Where(&data.Manufacturer{OrganizationId: org.ID, SnowflakeModel: data2.SnowflakeModel{ID: req.ManufacturerId}}).Count(&count); count == 0 {
+	mfgId, err := req.ManufacturerId.Int64()
+	if err != nil {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	exists, err = data.ManufacturerExistsById(mfgId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in CreateModel: %s\n", err)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if !exists {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	if data2.GetConn().Where(&data.Category{OrganizationId: org.ID, SnowflakeModel: data2.SnowflakeModel{ID: req.ManufacturerId}}).Count(&count); count == 0 {
+	catId, err := req.CategoryId.Int64()
+	if err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	model := &data.Model{
-		SnowflakeModel: data2.SnowflakeModel{
-			ID: snowflake.GetNode().Generate().Int64(),
-		},
+	exists, err = data.CategoryExistsById(catId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in CreateModel: %s\n", err)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if !exists {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+
+	model := data.Model{
 		Name:           req.Name,
-		ManufacturerId: req.ManufacturerId,
-		CategoryId:     req.CategoryId,
+		ManufacturerId: mfgId,
+		CategoryId:     catId,
 		OrganizationId: org.ID,
 	}
 
-	data2.GetConn().Create(&model)
-
+	err = data.CreateModel(&model)
+	if err != nil {
+		fmt.Printf("got error in CreateModel: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&model)
 }
 
@@ -96,8 +119,12 @@ func GetModel(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	var model data.Model
-	if data2.GetConn().Where(&data.Model{OrganizationId: org.ID}).Joins("Manufacturer").Joins("Category").First(&model, modelId).RowsAffected == 0 {
+	model, err := data.GetModelExpandedById(modelId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetModel: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if model == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	return c.Status(fiber.StatusOK).JSON(&model)
@@ -105,8 +132,8 @@ func GetModel(c *fiber.Ctx) error {
 
 type UpdateModelRequest struct {
 	Name           string `json:"name"`
-	ManufacturerId int64  `json:"manufacturerId"`
-	CategoryId     int64  `json:"categoryId"`
+	ManufacturerId int64  `json:"manufacturerId,string"`
+	CategoryId     int64  `json:"categoryId,string"`
 }
 
 func UpdateModel(c *fiber.Ctx) error {
@@ -118,7 +145,7 @@ func UpdateModel(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
-	var req CreateModelRequest
+	var req UpdateModelRequest
 	err := c.BodyParser(&req)
 	if err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
@@ -137,43 +164,58 @@ func UpdateModel(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	var model data.Model
-	if data2.GetConn().Where(&data.Model{
-		OrganizationId: org.ID}).First(&model, modelId).RowsAffected == 0 {
+	model, err := data.GetModelById(modelId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in UpdateModel: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if model == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	var count int64
 	if len(req.Name) > 0 {
-		if data2.GetConn().Where(&data.Model{
-			OrganizationId: org.ID, Name: req.Name}).Count(&count); count > 0 {
+		exists, err := data.ModelExistsInOrg(org.ID, req.Name)
+		if err != nil {
+			fmt.Printf("got error in UpdateModel: %s\n", err) // TODO Implement logging system
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		if exists {
 			return c.SendStatus(fiber.StatusConflict)
 		}
 		model.Name = req.Name
 	}
 
 	if req.ManufacturerId > 0 {
-		if data2.GetConn().Where(&data.Manufacturer{
-			OrganizationId: org.ID, SnowflakeModel: data2.SnowflakeModel{
-				ID: req.ManufacturerId}}).Count(&count); count == 0 {
+		exists, err := data.ManufacturerExistsById(req.ManufacturerId, org.ID)
+		if err != nil {
+			fmt.Printf("got error in UpdateModel: %s\n", err) // TODO implement logging system
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		if !exists {
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 		model.ManufacturerId = req.ManufacturerId
 	}
 	if req.CategoryId > 0 {
-		if data2.GetConn().Where(&data.Category{
-			OrganizationId: org.ID, SnowflakeModel: data2.SnowflakeModel{
-				ID: req.ManufacturerId}}).Count(&count); count == 0 {
+		exists, err := data.CategoryExistsById(req.CategoryId, org.ID)
+		if err != nil {
+			fmt.Printf("got error in UpdateModel: %s\n", err) // TODO implement logging system
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		if !exists {
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 		model.CategoryId = req.CategoryId
 	}
-	data2.GetConn().Save(&model)
-
+	err = data.UpdateModel(model)
+	if err != nil {
+		fmt.Printf("got error in UpdateModel: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&model)
 }
 
-func DeleteModeL(c *fiber.Ctx) error {
+func DeleteModel(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
 	if org == nil {
 		return c.SendStatus(fiber.StatusNotFound)
@@ -191,12 +233,19 @@ func DeleteModeL(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	var model data.Model
-	if data2.GetConn().Where(&data.Model{
-		OrganizationId: org.ID}).First(&model, modelId).RowsAffected == 0 {
+	model, err := data.GetModelById(modelId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in DeleteModel: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if model == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	data2.GetConn().Delete(&model)
+	err = data.DeleteModel(model)
+	if err != nil {
+		fmt.Printf("got error in DeleteModel: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 
 	return c.SendStatus(fiber.StatusOK)
 }

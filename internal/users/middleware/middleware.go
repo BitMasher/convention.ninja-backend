@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"convention.ninja/internal/auth"
-	"convention.ninja/internal/data"
 	userData "convention.ninja/internal/users/data"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -17,10 +17,12 @@ func New() fiber.Handler {
 			if len(idToken.UserId) == 0 {
 				return c.Next()
 			}
-			db := data.GetConn()
-			var user userData.User
-			result := db.Where("firebase_id = ?", idToken.UserId).First(&user)
-			if result.RowsAffected > 0 {
+			user, err := userData.GetUserByFirebase(idToken.UserId)
+			if err != nil {
+				fmt.Printf("got error in user middleware: %s\n", err)
+				return c.Next()
+			}
+			if user != nil {
 				c.Locals("user", &user)
 			}
 		}

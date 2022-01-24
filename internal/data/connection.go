@@ -1,36 +1,31 @@
 package data
 
 import (
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"os"
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
-var db *gorm.DB
+var db *sql.DB
 
 func Connect(dsn string) error {
-	dryRun := false
-	if os.Getenv("DRYRUN") == "1" {
-		dryRun = true
-	}
-	locDb, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		PrepareStmt:       true,
-		AllowGlobalUpdate: false,
-		DryRun:            dryRun,
-	})
+	db_, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	sqlDb, err := locDb.DB()
-	if err != nil {
-		return err
-	}
-	sqlDb.SetMaxIdleConns(5)
-	sqlDb.SetMaxOpenConns(15)
-	db = locDb
+	db = db_
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
 	return nil
 }
 
-func GetConn() *gorm.DB {
+func GetConn() *sql.DB {
 	return db
+}
+
+func CloseConn() {
+	if db != nil {
+		_ = db.Close()
+	}
 }

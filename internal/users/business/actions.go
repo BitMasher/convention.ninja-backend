@@ -4,16 +4,15 @@ import (
 	"context"
 	"convention.ninja/internal/auth"
 	"convention.ninja/internal/auth/guards"
-	"convention.ninja/internal/data"
-	"convention.ninja/internal/snowflake"
 	userData "convention.ninja/internal/users/data"
 	"errors"
 	auth2 "firebase.google.com/go/auth"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strings"
 )
 
-func GetUsers(c *fiber.Ctx) error {
+func GetUsers(_ *fiber.Ctx) error {
 	return errors.New("not implemented") // TODO
 }
 
@@ -25,25 +24,22 @@ type CreateUserRequest struct {
 
 func CreateUser(c *fiber.Ctx) error {
 	if c.Locals("user") != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("User already created")
+		return c.SendStatus(fiber.StatusConflict)
 	}
 
 	var req CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("bad request")
+		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
 	if len(req.Name) == 0 || len(req.Email) == 0 || !strings.Contains(req.Email, "@") {
-		return c.Status(fiber.StatusBadRequest).SendString("bad request")
+		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	if len(req.DisplayName) == 0 {
 		req.DisplayName = req.Name
 	}
 
 	user := userData.User{
-		SnowflakeModel: data.SnowflakeModel{
-			ID: snowflake.GetNode().Generate().Int64(),
-		},
 		Name:          req.Name,
 		DisplayName:   req.DisplayName,
 		Email:         strings.ToLower(req.Email),
@@ -51,17 +47,27 @@ func CreateUser(c *fiber.Ctx) error {
 		FirebaseId:    c.Locals("idtoken").(*auth.IdToken).UserId,
 	}
 
-	var exists userData.User
-	if data.GetConn().First(&exists, "firebase_id=?", c.Locals("idtoken").(*auth.IdToken).UserId).RowsAffected > 0 {
+	exists, err := userData.GetUserByFirebase(c.Locals("idtoken").(*auth.IdToken).UserId)
+	if err != nil {
+		fmt.Printf("got error in CreateUser: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if exists != nil {
 		return c.Status(fiber.StatusOK).JSON(&exists)
 	}
-
-	if data.GetConn().First(&userData.User{}, "email=?", user.Email).RowsAffected > 0 {
+	emailExists, err := userData.EmailExists(user.Email)
+	if err != nil {
+		fmt.Printf("got error in CreateUser: %s\n", err) // TODO implement logging system
+	}
+	if emailExists {
 		return c.Status(fiber.StatusConflict).SendString("email already associated with existing user")
 	}
 
 	// TODO send email verification
-	data.GetConn().Create(&user)
+	err = userData.CreateUser(&user)
+	if err != nil {
+		fmt.Printf("got error in CreateUser: %s\n", err) // TODO implement logging system
+	}
 	return c.Status(fiber.StatusOK).JSON(&user)
 }
 
@@ -70,10 +76,11 @@ func GetMe(c *fiber.Ctx) error {
 }
 
 func GetUser(c *fiber.Ctx) error {
+	// TODO need to be able to get other users, but with a filtered view
 	if guards.SameUserGuard(c.Params("userId", ""), c) {
 		return c.Status(fiber.StatusOK).JSON(c.Locals("user").(*userData.User))
 	}
-	return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized request")
+	return c.SendStatus(fiber.StatusUnauthorized)
 }
 
 type UpdateUserRequest struct {
@@ -86,10 +93,10 @@ func UpdateUser(c *fiber.Ctx) error {
 	if guards.SameUserGuard(c.Params("userId", ""), c) {
 		var req UpdateUserRequest
 		if err := c.BodyParser(&req); err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString("bad request")
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 		if len(req.Name) == 0 && len(req.DisplayName) == 0 && len(req.Email) == 0 {
-			return c.Status(fiber.StatusOK).SendString("")
+			return c.SendStatus(fiber.StatusOK)
 		}
 		user := c.Locals("user").(*userData.User)
 		if len(req.Name) > 0 {
@@ -98,13 +105,16 @@ func UpdateUser(c *fiber.Ctx) error {
 		if len(req.DisplayName) > 0 {
 			user.DisplayName = req.DisplayName
 		}
-		if len(req.Email) > 0 {
+		if len(req.Email) > 0 && strings.ToLower(req.Email) != strings.ToLower(user.Email) {
 			user.Email = req.Email
 			user.EmailVerified = false
 		}
-		data.GetConn().Save(&user)
+		if err := userData.UpdateUser(user); err != nil {
+			fmt.Printf("got error in UpdateUser: %s\n", err) // TODO implement logging system
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
 	}
-	return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized request")
+	return c.SendStatus(fiber.StatusUnauthorized)
 }
 
 func DeleteUser(c *fiber.Ctx) error {
@@ -112,16 +122,17 @@ func DeleteUser(c *fiber.Ctx) error {
 		user := c.Locals("user").(*userData.User)
 		client, err := auth.GetConfig().FirebaseApp.Auth(context.Background())
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Unexpected error")
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		params := (&auth2.UserToUpdate{}).Disabled(true)
 		_, err = client.UpdateUser(context.Background(), c.Locals("idtoken").(*auth.IdToken).UserId, params)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Unexpected error")
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
-		if data.GetConn().Delete(&user).RowsAffected > 0 {
-			return c.Status(fiber.StatusOK).SendString("")
+		if err = userData.DeleteUser(user); err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
+		return c.SendStatus(fiber.StatusOK)
 	}
-	return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized request")
+	return c.SendStatus(fiber.StatusUnauthorized)
 }

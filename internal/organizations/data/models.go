@@ -7,12 +7,8 @@ import (
 
 type Organization struct {
 	data.SnowflakeModel
-	Name           string        `json:"name,omitempty"`
+	Name           string        `json:"name"`
 	NormalizedName string        `json:"-"`
 	OwnerId        int64         `json:"ownerId,string"`
 	Owner          userData.User `json:"-"`
-}
-
-func Migrate() {
-	_ = data.GetConn().AutoMigrate(&Organization{})
 }

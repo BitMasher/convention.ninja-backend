@@ -2,9 +2,8 @@ package business
 
 import (
 	"convention.ninja/internal/common"
-	data2 "convention.ninja/internal/data"
 	"convention.ninja/internal/inventory/data"
-	"convention.ninja/internal/snowflake"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
@@ -17,20 +16,17 @@ func GetAssets(c *fiber.Ctx) error {
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
-	var assets []data.Asset
-	data2.GetConn().Where(&data.Asset{
-		OrganizationId: org.ID,
-	}).
-		Preload("AssetTags").
-		Joins("Model").
-		Joins("Model.Category").
-		Joins("Model.Manufacturer").Find(&assets)
+	assets, err := data.GetAssetsExpandedByOrganization(org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetAssets: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&assets)
 }
 
 type CreateAssetRequest struct {
 	SerialNumber string   `json:"serialNumber"`
-	ModelId      int64    `json:"modelId"`
+	ModelId      int64    `json:"modelId,string"`
 	AssetTags    []string `json:"assetTags"`
 }
 
@@ -51,39 +47,49 @@ func CreateAsset(c *fiber.Ctx) error {
 	if req.ModelId == 0 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	asset := &data.Asset{
-		SnowflakeModel: data2.SnowflakeModel{
-			ID: snowflake.GetNode().Generate().Int64(),
-		},
+	asset := data.Asset{
 		ModelId:        req.ModelId,
 		SerialNumber:   req.SerialNumber,
 		OrganizationId: org.ID,
 	}
-	db := data2.GetConn()
-	var count int64
-	if db.Where(&data.Model{
-		SnowflakeModel: data2.SnowflakeModel{ID: req.ModelId},
-		OrganizationId: org.ID,
-	}).Count(&count); count == 0 {
+	exists, err := data.ModelExistsById(req.ModelId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in CreateAsset: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if !exists {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	if req.AssetTags != nil && len(req.AssetTags) > 0 {
-		if db.Model(&data.AssetTag{}).Where("organization_id = ? AND tag_id in ?", org.ID, req.AssetTags).Count(&count); count > 0 {
+		exists, err = data.AssetTagsExistInOrg(org.ID, req.AssetTags)
+		if err != nil {
+			fmt.Printf("got error in CreateAsset: %s\n", err) // TODO implement logging system
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		if exists {
 			return c.SendStatus(fiber.StatusConflict)
 		}
 	}
-	db.Create(&asset)
+	err = data.CreateAsset(&asset)
+	if err != nil {
+		fmt.Printf("got error in CreateAsset: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	asset.AssetTags = make([]data.AssetTag, 0)
 	for _, tag := range req.AssetTags {
 		assetTag := data.AssetTag{
-			SnowflakeModel: data2.SnowflakeModel{ID: snowflake.GetNode().Generate().Int64()},
 			TagId:          tag,
 			AssetId:        asset.ID,
 			OrganizationId: org.ID,
 		}
-		db.Create(&assetTag)
 		asset.AssetTags = append(asset.AssetTags, assetTag)
 	}
+	err = data.BulkCreateAssetTag(asset.AssetTags)
+	if err != nil {
+		fmt.Printf("got error in CreateAsset: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+
 	return c.Status(fiber.StatusOK).JSON(&asset)
 }
 
@@ -103,14 +109,12 @@ func GetAsset(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var asset data.Asset
-	if data2.GetConn().Where(&data.Asset{
-		OrganizationId: org.ID,
-	}).
-		Preload("AssetTags").
-		Joins("Model").
-		Joins("Model.Category").
-		Joins("Model.Manufacturer").First(&asset, assetId).RowsAffected == 0 {
+	asset, err := data.GetAssetExpandedById(assetId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetAsset: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if asset == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	return c.Status(fiber.StatusOK).JSON(&asset)
@@ -118,7 +122,7 @@ func GetAsset(c *fiber.Ctx) error {
 
 type UpdateAssetRequest struct {
 	SerialNumber string `json:"serialNumber"`
-	ModelId      int64
+	ModelId      int64  `json:"modelId,string"`
 }
 
 func UpdateAsset(c *fiber.Ctx) error {
@@ -145,20 +149,22 @@ func UpdateAsset(c *fiber.Ctx) error {
 	if req.SerialNumber == "" && req.ModelId == 0 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	db := data2.GetConn()
-	var count int64
 	if req.ModelId > 0 {
-		if db.Where(&data.Model{
-			SnowflakeModel: data2.SnowflakeModel{ID: req.ModelId},
-			OrganizationId: org.ID,
-		}).Count(&count); count == 0 {
+		exists, err := data.ModelExistsById(req.ModelId, org.ID)
+		if err != nil {
+			fmt.Printf("got error in UpdateAsset: %s\n", err) // TODO implement logging system
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		if !exists {
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 	}
-	var asset data.Asset
-	if data2.GetConn().Where(&data.Asset{
-		OrganizationId: org.ID,
-	}).First(&asset, assetId).RowsAffected == 0 {
+	asset, err := data.GetAssetById(assetId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in UpdateAsset: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if asset == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	if req.SerialNumber != "" {
@@ -167,8 +173,11 @@ func UpdateAsset(c *fiber.Ctx) error {
 	if req.ModelId != 0 {
 		asset.ModelId = req.ModelId
 	}
-
-	db.Save(&asset)
+	err = data.UpdateAsset(asset)
+	if err != nil {
+		fmt.Printf("got error in UpdateAsset: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 
 	return c.Status(fiber.StatusOK).JSON(&asset)
 }
@@ -189,13 +198,20 @@ func GetAssetBarcodes(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var asset data.Asset
-	if data2.GetConn().Where(&data.Asset{
-		OrganizationId: org.ID,
-	}).Preload("AssetTags").First(&asset, assetId).RowsAffected == 0 {
+	exists, err := data.AssetExistsById(assetId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetAssetBarcodes: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if !exists {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	return c.Status(fiber.StatusOK).JSON(&asset.AssetTags)
+	tags, err := data.GetAssetTagsByAssetId(assetId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetAssetBarcodes: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	return c.Status(fiber.StatusOK).JSON(&tags)
 }
 
 type CreateAssetBarcodeRequest struct {
@@ -223,28 +239,32 @@ func CreateAssetBarcode(c *fiber.Ctx) error {
 	if err != nil || len(req.TagId) == 0 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	var asset data.Asset
-	if data2.GetConn().Where(&data.Asset{
-		OrganizationId: org.ID,
-	}).First(&asset, assetId).RowsAffected == 0 {
+	exists, err := data.AssetExistsById(assetId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in CreateAssetBarcode: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if !exists {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var count int64
-	if data2.GetConn().Where(&data.AssetTag{
-		TagId:          req.TagId,
-		OrganizationId: org.ID,
-	}).Count(&count); count > 0 {
+	exists, err = data.AssetTagExistInOrg(org.ID, req.TagId)
+	if err != nil {
+		fmt.Printf("got error in CreateAssetBarcode: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if exists {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	tag := data.AssetTag{
-		SnowflakeModel: data2.SnowflakeModel{
-			ID: snowflake.GetNode().Generate().Int64(),
-		},
 		TagId:          req.TagId,
-		AssetId:        asset.ID,
+		AssetId:        assetId,
 		OrganizationId: org.ID,
 	}
-	data2.GetConn().Create(&tag)
+	err = data.CreateAssetTag(&tag)
+	if err != nil {
+		fmt.Printf("got error in CreateAssetBarcode: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&tag)
 }
 
@@ -272,20 +292,27 @@ func DeleteAssetBarcode(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var asset data.Asset
-	if data2.GetConn().Where(&data.Asset{
-		OrganizationId: org.ID,
-	}).First(&asset, assetId).RowsAffected == 0 {
+	exists, err := data.AssetExistsById(assetId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in DeleteAssetBarcode: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if !exists {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var assetTag data.AssetTag
-	if data2.GetConn().Where(&data.AssetTag{
-		AssetId:        asset.ID,
-		OrganizationId: org.ID,
-	}).First(&assetTag, barcodeId).RowsAffected == 0 {
+	assetTag, err := data.GetAssetTagById(barcodeId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in DeleteAssetBarcode: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if assetTag == nil || assetTag.AssetId != assetId {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	data2.GetConn().Delete(&assetTag)
+	err = data.DeleteAssetTag(assetTag)
+	if err != nil {
+		fmt.Printf("got error in DeleteAssetBarcode: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -305,17 +332,24 @@ func DeleteAsset(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var asset data.Asset
-	if data2.GetConn().Where(&data.Asset{
-		OrganizationId: org.ID,
-	}).Preload("AssetTags").First(&asset, assetId).RowsAffected == 0 {
+	asset, err := data.GetAssetById(assetId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in DeleteAsset: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if asset == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	data2.GetConn().Where(data.AssetTag{
-		AssetId:        asset.ID,
-		OrganizationId: org.ID,
-	}).Delete(data.AssetTag{})
-	data2.GetConn().Delete(&asset)
+	err = data.DeleteAsset(asset)
+	if err != nil {
+		fmt.Printf("got error in DeleteAsset: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	err = data.DeleteAssetTagsByAssetId(assetId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in DeleteAsset: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -331,12 +365,13 @@ func GetAssetByBarcode(c *fiber.Ctx) error {
 	if tagId == "" {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var tag data.AssetTag
-	if data2.GetConn().Joins("Asset").Where(&data.AssetTag{
-		TagId:          tagId,
-		OrganizationId: org.ID,
-	}).First(&tag).RowsAffected == 0 {
+	asset, err := data.GetAssetByTag(tagId, org.ID)
+	if err != nil {
+		fmt.Printf("got error in GetAssetByBarcode: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if asset == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	return c.Status(fiber.StatusOK).JSON(&tag.Asset)
+	return c.Status(fiber.StatusOK).JSON(&asset)
 }

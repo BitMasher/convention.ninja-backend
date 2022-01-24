@@ -10,7 +10,3 @@ type User struct {
 	EmailVerified bool   `json:"-"`
 	FirebaseId    string `json:"-"`
 }
-
-func Migrate() {
-	_ = data.GetConn().AutoMigrate(&User{})
-}

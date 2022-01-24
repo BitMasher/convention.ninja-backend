@@ -172,6 +172,6 @@ func setupModels(modelsGrp fiber.Router) {
 	})
 
 	modelsGrp.Delete("/:modelId", func(c *fiber.Ctx) error {
-		return business.DeleteModeL(c)
+		return business.DeleteModel(c)
 	})
 }

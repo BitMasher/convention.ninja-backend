@@ -2,22 +2,21 @@ package business
 
 import (
 	"convention.ninja/internal/common"
-	data2 "convention.ninja/internal/data"
 	"convention.ninja/internal/organizations/data"
-	"convention.ninja/internal/snowflake"
 	userData "convention.ninja/internal/users/data"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 	"strings"
 )
 
-// TODO this should have search filters instead of just returning _my_ organizations
 func GetOrganizations(c *fiber.Ctx) error {
+	// TODO this should have search filters instead of just returning _my_ organizations
 	user := c.Locals("user").(*userData.User)
-	var organizations []data.Organization
-	data2.GetConn().Where(&data.Organization{
-		OwnerId: user.ID,
-	}).Find(&organizations)
+	organizations, err := data.GetOrganizationsByOwner(user.ID)
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 
 	return c.Status(fiber.StatusOK).JSON(&organizations)
 }
@@ -32,20 +31,23 @@ func CreateOrganization(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	var count int64
-	if data2.GetConn().Where(&data.Organization{NormalizedName: strings.ToLower(req.Name)}).Count(&count); count > 0 {
+	orgExists, err := data.OrganizationNameExists(req.Name)
+	if err != nil {
+		fmt.Printf("got error in CreateOrganization: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if orgExists {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	org := data.Organization{
-		SnowflakeModel: data2.SnowflakeModel{
-			ID: snowflake.GetNode().Generate().Int64(),
-		},
-		Name:           req.Name,
-		NormalizedName: strings.ToLower(req.Name),
-		OwnerId:        c.Locals("user").(*userData.User).ID,
+		Name:    req.Name,
+		OwnerId: c.Locals("user").(*userData.User).ID,
 	}
 
-	data2.GetConn().Create(&org)
+	if err = data.CreateOrganization(&org); err != nil {
+		fmt.Printf("got error in CreateOrganization: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 
 	return c.Status(fiber.StatusOK).JSON(&org)
 }
@@ -56,8 +58,12 @@ func GetOrganization(c *fiber.Ctx) error {
 	if err == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var org data.Organization
-	if data2.GetConn().First(&org, orgId).RowsAffected > 0 {
+	org, err := data.GetOrganizationById(orgId)
+	if err != nil {
+		fmt.Printf("got error in GetOrganization: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if org != nil {
 		return c.Status(fiber.StatusOK).JSON(&org)
 	}
 	return c.SendStatus(fiber.StatusNotFound)
@@ -85,20 +91,24 @@ func UpdateOrganization(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	if org.NormalizedName != strings.ToLower(req.Name) {
-		var count int64
-		if data2.GetConn().Where(&data.Organization{
-			NormalizedName: strings.ToLower(req.Name)}).Count(&count); count > 0 {
+		exists, err := data.OrganizationNameExists(req.Name)
+		if err != nil {
+			fmt.Printf("got error in UpdateOrganizatin: %s\n", err) // TODO implement logging system
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		if exists {
 			return c.SendStatus(fiber.StatusConflict)
 		}
 	}
 	org.Name = req.Name
-	org.NormalizedName = strings.ToLower(req.Name)
-	data2.GetConn().Save(&org)
+	if err = data.UpdateOrganization(org); err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.Status(fiber.StatusOK).JSON(&org)
 }
 
-// TODO this needs to do a lot more clean up
 func DeleteOrganization(c *fiber.Ctx) error {
+	// TODO this needs to do a lot more clean up
 	org, auth := common.GetOrgAndAuthorize(c)
 	if org == nil {
 		return c.SendStatus(fiber.StatusNotFound)
@@ -106,6 +116,8 @@ func DeleteOrganization(c *fiber.Ctx) error {
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
-	data2.GetConn().Delete(&org)
+	if err := data.DeleteOrganization(org); err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return c.SendStatus(fiber.StatusOK)
 }

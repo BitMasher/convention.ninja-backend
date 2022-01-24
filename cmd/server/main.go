@@ -66,6 +66,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer data.CloseConn()
 
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,

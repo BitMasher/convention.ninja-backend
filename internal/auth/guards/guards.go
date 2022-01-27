@@ -3,17 +3,19 @@ package guards
 import (
 	"convention.ninja/internal/organizations/data"
 	userData "convention.ninja/internal/users/data"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
 
 func SameUserGuard(testUser string, c *fiber.Ctx) bool {
 	if user, ok := c.Locals("user").(*userData.User); ok {
-		if value, err := strconv.ParseInt(testUser, 10, 64); err != nil {
-			if value == user.ID {
-				return true
-			}
+		value, err := strconv.ParseInt(testUser, 10, 64)
+		if err != nil {
+			fmt.Printf("got error in SameUserGuard: %s\n", err) // TODO implement logging system
+			return false
 		}
+		return value == user.ID
 	}
 	return false
 }

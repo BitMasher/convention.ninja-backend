@@ -10,11 +10,11 @@ import (
 
 func GetManufacturers(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	manufacturers, err := data3.GetManufacturersByOrganization(org.ID)
 	if err != nil {
@@ -30,15 +30,15 @@ type CreateManufacturerRequest struct {
 
 func CreateManufacturer(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
 	var req CreateManufacturerRequest
 	err := c.BodyParser(&req)
-	if err != nil {
+	if err != nil || len(req.Name) == 0 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	exists, err := data3.ManufacturerExistsInOrg(org.ID, req.Name)
@@ -64,11 +64,11 @@ func CreateManufacturer(c *fiber.Ctx) error {
 
 func GetManufacturer(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	mfgId_ := c.Params("mfgId", "")
 	if mfgId_ == "" {
@@ -96,15 +96,15 @@ type UpdateManufacturerRequest struct {
 
 func UpdateManufacturer(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
 	var req UpdateManufacturerRequest
 	err := c.BodyParser(&req)
-	if err != nil {
+	if err != nil || len(req.Name) == 0 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	mfgId_ := c.Params("mfgId", "")
@@ -142,11 +142,11 @@ func UpdateManufacturer(c *fiber.Ctx) error {
 
 func DeleteManufacturer(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	mfgId_ := c.Params("mfgId", "")
 	if mfgId_ == "" {

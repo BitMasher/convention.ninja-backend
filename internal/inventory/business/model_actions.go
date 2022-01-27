@@ -11,11 +11,11 @@ import (
 
 func GetModels(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	models, err := data.GetModelsExpandedByOrganization(org.ID)
 	if err != nil {
@@ -33,11 +33,11 @@ type CreateModelRequest struct {
 
 func CreateModel(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 
 	var req CreateModelRequest
@@ -102,11 +102,11 @@ func CreateModel(c *fiber.Ctx) error {
 
 func GetModel(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 
 	modelId_ := c.Params("modelId", "")
@@ -138,11 +138,11 @@ type UpdateModelRequest struct {
 
 func UpdateModel(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 
 	var req UpdateModelRequest
@@ -217,11 +217,11 @@ func UpdateModel(c *fiber.Ctx) error {
 
 func DeleteModel(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	modelId_ := c.Params("modelId", "")
 	if modelId_ == "" {

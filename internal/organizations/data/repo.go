@@ -15,6 +15,7 @@ func GetOrganizationsByOwner(ownerId int64) (*[]Organization, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var results []Organization
 	results = make([]Organization, 0)
 	for rows.Next() {
@@ -24,6 +25,9 @@ func GetOrganizationsByOwner(ownerId int64) (*[]Organization, error) {
 		}
 		results = append(results, org)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return &results, nil
 }
 
@@ -32,12 +36,16 @@ func OrganizationNameExists(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	defer rows.Close()
 	if rows.Next() {
 		var count int64
 		if err = rows.Scan(&count); err != nil {
 			return false, err
 		}
 		return count > 0, nil
+	}
+	if err = rows.Err(); err != nil {
+		return false, err
 	}
 	return false, errors.New("expected one result got zero")
 }
@@ -67,12 +75,16 @@ func GetOrganizationById(id int64) (*Organization, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	if rows.Next() {
 		var org Organization
 		if err = rows.Scan(&org.ID, &org.Name, &org.NormalizedName, &org.OwnerId, &org.CreatedAt, &org.UpdatedAt, &org.DeletedAt); err != nil {
 			return nil, err
 		}
 		return &org, nil
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return nil, nil
 }

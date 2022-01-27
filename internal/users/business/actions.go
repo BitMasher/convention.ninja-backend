@@ -6,7 +6,6 @@ import (
 	"convention.ninja/internal/auth/guards"
 	userData "convention.ninja/internal/users/data"
 	"errors"
-	auth2 "firebase.google.com/go/auth"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strings"
@@ -113,26 +112,23 @@ func UpdateUser(c *fiber.Ctx) error {
 			fmt.Printf("got error in UpdateUser: %s\n", err) // TODO implement logging system
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
+		return c.Status(fiber.StatusOK).JSON(&user)
 	}
 	return c.SendStatus(fiber.StatusUnauthorized)
 }
 
-func DeleteUser(c *fiber.Ctx) error {
-	if guards.SameUserGuard(c.Params("userId", ""), c) {
-		user := c.Locals("user").(*userData.User)
-		client, err := auth.GetConfig().FirebaseApp.Auth(context.Background())
-		if err != nil {
-			return c.SendStatus(fiber.StatusInternalServerError)
-		}
-		params := (&auth2.UserToUpdate{}).Disabled(true)
-		_, err = client.UpdateUser(context.Background(), c.Locals("idtoken").(*auth.IdToken).UserId, params)
-		if err != nil {
-			return c.SendStatus(fiber.StatusInternalServerError)
-		}
-		if err = userData.DeleteUser(user); err != nil {
-			return c.SendStatus(fiber.StatusInternalServerError)
-		}
-		return c.SendStatus(fiber.StatusOK)
+func DeleteMe(c *fiber.Ctx) error {
+	user := c.Locals("user").(*userData.User)
+	client, err := auth.GetConfig().FirebaseApp.Auth(context.Background())
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
 	}
-	return c.SendStatus(fiber.StatusUnauthorized)
+	err = client.DeleteUser(context.Background(), c.Locals("idtoken").(*auth.IdToken).UserId)
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if err = userData.DeleteUser(user); err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	return c.SendStatus(fiber.StatusOK)
 }

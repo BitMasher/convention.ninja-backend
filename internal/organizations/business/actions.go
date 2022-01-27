@@ -55,7 +55,7 @@ func CreateOrganization(c *fiber.Ctx) error {
 func GetOrganization(c *fiber.Ctx) error {
 	orgId_ := c.Params("orgId")
 	orgId, err := strconv.ParseInt(orgId_, 10, 64)
-	if err == nil {
+	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	org, err := data.GetOrganizationById(orgId)

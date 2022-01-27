@@ -31,37 +31,23 @@ func SetupRoutes(grp fiber.Router) {
 }
 
 func setupManifests(manifestsGrp fiber.Router) {
-	manifestsGrp.Get("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	manifestsGrp.Get("/", business.GetManifests)
 
-	manifestsGrp.Post("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	manifestsGrp.Post("/", business.CreateManifest)
 
-	manifestsGrp.Get("/:manifestId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	manifestsGrp.Get("/:manifestId", business.GetManifest)
 
-	manifestsGrp.Put("/:manifestId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	manifestsGrp.Put("/:manifestId", business.UpdateManifest)
 
-	manifestsGrp.Patch("/:manifestId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	manifestsGrp.Post("/:manifestId/ship", business.ShipManifest)
 
-	manifestsGrp.Delete("/:manifestId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	manifestsGrp.Delete("/:manifestId/ship", business.UnshipManifest)
 
-	manifestsGrp.Get("/:manifestId/assets", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	manifestsGrp.Delete("/:manifestId", business.DeleteManifest)
 
-	manifestsGrp.Post("/:manifestId/assets", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	manifestsGrp.Get("/:manifestId/assets", business.GetManifestAssets)
+
+	manifestsGrp.Post("/:manifestId/assets", business.AddAssetToManifest)
 
 	manifestsGrp.Put("/:manifestId/assets", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
@@ -73,105 +59,57 @@ func setupManifests(manifestsGrp fiber.Router) {
 }
 
 func setupAssets(assetsGrp fiber.Router) {
-	assetsGrp.Get("/", func(c *fiber.Ctx) error {
-		return business.GetAssets(c)
-	})
+	assetsGrp.Get("/", business.GetAssets)
 
-	assetsGrp.Post("/", func(c *fiber.Ctx) error {
-		return business.CreateAsset(c)
-	})
+	assetsGrp.Post("/", business.CreateAsset)
 
-	assetsGrp.Get("/:assetId", func(c *fiber.Ctx) error {
-		return business.GetAsset(c)
-	})
+	assetsGrp.Get("/:assetId", business.GetAsset)
 
-	assetsGrp.Patch("/:assetId", func(c *fiber.Ctx) error {
-		return business.UpdateAsset(c)
-	})
+	assetsGrp.Patch("/:assetId", business.UpdateAsset)
 
-	assetsGrp.Get("/:assetId/barcodes", func(c *fiber.Ctx) error {
-		return business.GetAssetBarcodes(c)
-	})
+	assetsGrp.Get("/:assetId/barcodes", business.GetAssetBarcodes)
 
-	assetsGrp.Post("/:assetId/barcodes", func(c *fiber.Ctx) error {
-		return business.CreateAssetBarcode(c)
-	})
+	assetsGrp.Post("/:assetId/barcodes", business.CreateAssetBarcode)
 
-	assetsGrp.Delete("/:assetId/barcodes/:barcodeId", func(c *fiber.Ctx) error {
-		return business.DeleteAssetBarcode(c)
-	})
+	assetsGrp.Delete("/:assetId/barcodes/:barcodeId", business.DeleteAssetBarcode)
 
-	assetsGrp.Delete("/:assetId", func(c *fiber.Ctx) error {
-		return business.DeleteAsset(c)
-	})
+	assetsGrp.Delete("/:assetId", business.DeleteAsset)
 
-	assetsGrp.Get("/barcode/:barcode", func(c *fiber.Ctx) error {
-		return business.GetAssetByBarcode(c)
-	})
+	assetsGrp.Get("/barcode/:barcode", business.GetAssetByBarcode)
 }
 
 func setupCategories(categoriesGrp fiber.Router) {
-	categoriesGrp.Get("/", func(c *fiber.Ctx) error {
-		return business.GetCategories(c)
-	})
+	categoriesGrp.Get("/", business.GetCategories)
 
-	categoriesGrp.Post("/", func(c *fiber.Ctx) error {
-		return business.CreateCategory(c)
-	})
+	categoriesGrp.Post("/", business.CreateCategory)
 
-	categoriesGrp.Get("/:categoryId", func(c *fiber.Ctx) error {
-		return business.GetCategory(c)
-	})
+	categoriesGrp.Get("/:categoryId", business.GetCategory)
 
-	categoriesGrp.Put("/:categoryId", func(c *fiber.Ctx) error {
-		return business.UpdateCategory(c)
-	})
+	categoriesGrp.Put("/:categoryId", business.UpdateCategory)
 
-	categoriesGrp.Delete("/:categoryId", func(c *fiber.Ctx) error {
-		return business.DeleteCategory(c)
-	})
+	categoriesGrp.Delete("/:categoryId", business.DeleteCategory)
 }
 
 func setupMfg(mfgGrp fiber.Router) {
-	mfgGrp.Get("/", func(c *fiber.Ctx) error {
-		return business.GetManufacturers(c)
-	})
+	mfgGrp.Get("/", business.GetManufacturers)
 
-	mfgGrp.Post("/", func(c *fiber.Ctx) error {
-		return business.CreateManufacturer(c)
-	})
+	mfgGrp.Post("/", business.CreateManufacturer)
 
-	mfgGrp.Get("/:mfgId", func(c *fiber.Ctx) error {
-		return business.GetManufacturer(c)
-	})
+	mfgGrp.Get("/:mfgId", business.GetManufacturer)
 
-	mfgGrp.Put("/:mfgId", func(c *fiber.Ctx) error {
-		return business.UpdateManufacturer(c)
-	})
+	mfgGrp.Put("/:mfgId", business.UpdateManufacturer)
 
-	mfgGrp.Delete("/:mfgId", func(c *fiber.Ctx) error {
-		return business.DeleteManufacturer(c)
-	})
+	mfgGrp.Delete("/:mfgId", business.DeleteManufacturer)
 }
 
 func setupModels(modelsGrp fiber.Router) {
-	modelsGrp.Get("/", func(c *fiber.Ctx) error {
-		return business.GetModels(c)
-	})
+	modelsGrp.Get("/", business.GetModels)
 
-	modelsGrp.Post("/", func(c *fiber.Ctx) error {
-		return business.CreateModel(c)
-	})
+	modelsGrp.Post("/", business.CreateModel)
 
-	modelsGrp.Get("/:modelId", func(c *fiber.Ctx) error {
-		return business.GetModel(c)
-	})
+	modelsGrp.Get("/:modelId", business.GetModel)
 
-	modelsGrp.Put("/:modelId", func(c *fiber.Ctx) error {
-		return business.UpdateModel(c)
-	})
+	modelsGrp.Put("/:modelId", business.UpdateModel)
 
-	modelsGrp.Delete("/:modelId", func(c *fiber.Ctx) error {
-		return business.DeleteModel(c)
-	})
+	modelsGrp.Delete("/:modelId", business.DeleteModel)
 }

@@ -9,23 +9,13 @@ import (
 func SetupRoutes(grp fiber.Router) {
 	orgGrp := grp.Group("orgs")
 	orgGrp.Use(auth.NewUserRequired())
-	orgGrp.Get("/", func(c *fiber.Ctx) error {
-		return business.GetOrganizations(c)
-	})
+	orgGrp.Get("/", business.GetOrganizations)
 
-	orgGrp.Post("/", func(c *fiber.Ctx) error {
-		return business.CreateOrganization(c)
-	})
+	orgGrp.Post("/", business.CreateOrganization)
 
-	orgGrp.Get("/:orgId", func(c *fiber.Ctx) error {
-		return business.GetOrganization(c)
-	})
+	orgGrp.Get("/:orgId", business.GetOrganization)
 
-	orgGrp.Patch("/:orgId", func(c *fiber.Ctx) error {
-		return business.UpdateOrganization(c)
-	})
+	orgGrp.Patch("/:orgId", business.UpdateOrganization)
 
-	orgGrp.Delete("/:orgId", func(c *fiber.Ctx) error {
-		return business.DeleteOrganization(c)
-	})
+	orgGrp.Delete("/:orgId", business.DeleteOrganization)
 }

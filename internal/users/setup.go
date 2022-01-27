@@ -9,22 +9,10 @@ import (
 func SetupRoutes(grp fiber.Router) {
 
 	userGrp := grp.Group("users")
-	userGrp.Get("/", auth.NewUserRequired(func(c *fiber.Ctx) error {
-		return business.GetUsers(c)
-	}))
-	userGrp.Post("/", func(c *fiber.Ctx) error {
-		return business.CreateUser(c)
-	})
-	userGrp.Get("/me", auth.NewUserRequired(func(c *fiber.Ctx) error {
-		return business.GetMe(c)
-	}))
-	userGrp.Get("/:userId", auth.NewUserRequired(func(c *fiber.Ctx) error {
-		return business.GetUser(c)
-	}))
-	userGrp.Patch("/:userId", auth.NewUserRequired(func(c *fiber.Ctx) error {
-		return business.UpdateUser(c)
-	}))
-	userGrp.Delete("/:userId", auth.NewUserRequired(func(c *fiber.Ctx) error {
-		return business.DeleteUser(c)
-	}))
+	userGrp.Get("/", auth.NewUserRequired(business.GetUsers))
+	userGrp.Post("/", business.CreateUser)
+	userGrp.Get("/me", auth.NewUserRequired(business.GetMe))
+	userGrp.Delete("/me", auth.NewUserRequired(business.DeleteMe))
+	userGrp.Get("/:userId", auth.NewUserRequired(business.GetUser))
+	userGrp.Patch("/:userId", auth.NewUserRequired(business.UpdateUser))
 }

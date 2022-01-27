@@ -23,7 +23,7 @@ func New() fiber.Handler {
 				return c.Next()
 			}
 			if user != nil {
-				c.Locals("user", &user)
+				c.Locals("user", user)
 			}
 		}
 		return c.Next()

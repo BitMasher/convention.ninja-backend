@@ -10,11 +10,11 @@ import (
 
 func GetCategories(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	categories, err := data3.GetCategoriesByOrganization(org.ID)
 	if err != nil {
@@ -30,15 +30,15 @@ type CreateCategoryRequest struct {
 
 func CreateCategory(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
 	var req CreateCategoryRequest
 	err := c.BodyParser(&req)
-	if err != nil {
+	if err != nil || len(req.Name) == 0 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	exists, err := data3.CategoryExistsInOrg(org.ID, req.Name)
@@ -64,11 +64,11 @@ func CreateCategory(c *fiber.Ctx) error {
 
 func GetCategory(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	catId_ := c.Params("categoryId", "")
 	if catId_ == "" {
@@ -96,15 +96,15 @@ type UpdateCategoryRequest struct {
 
 func UpdateCategory(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
 	var req UpdateCategoryRequest
 	err := c.BodyParser(&req)
-	if err != nil {
+	if err != nil || len(req.Name) == 0 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	catId_ := c.Params("categoryId", "")
@@ -142,11 +142,11 @@ func UpdateCategory(c *fiber.Ctx) error {
 
 func DeleteCategory(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	catId_ := c.Params("categoryId", "")
 	if catId_ == "" {

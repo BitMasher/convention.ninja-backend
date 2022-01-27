@@ -15,12 +15,16 @@ func GetUserByFirebase(firebaseId string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var user User
 	if rows.Next() {
 		if err = rows.Scan(&user.ID, &user.Name, &user.DisplayName, &user.Email, &user.EmailVerified, &user.FirebaseId, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
 			return nil, err
 		}
 		return &user, nil
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return nil, nil
 }
@@ -30,12 +34,16 @@ func EmailExists(email string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	defer rows.Close()
 	if rows.Next() {
 		var count int64
 		if err = rows.Scan(&count); err != nil {
 			return false, err
 		}
 		return count > 0, nil
+	}
+	if err = rows.Err(); err != nil {
+		return false, err
 	}
 	return false, errors.New("got no records but expected one")
 }

@@ -10,11 +10,11 @@ import (
 
 func GetAssets(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	assets, err := data.GetAssetsExpandedByOrganization(org.ID)
 	if err != nil {
@@ -32,11 +32,11 @@ type CreateAssetRequest struct {
 
 func CreateAsset(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 
 	var req CreateAssetRequest
@@ -95,11 +95,11 @@ func CreateAsset(c *fiber.Ctx) error {
 
 func GetAsset(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	assetId_ := c.Params("assetId", "")
 	if assetId_ == "" {
@@ -127,11 +127,11 @@ type UpdateAssetRequest struct {
 
 func UpdateAsset(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	assetId_ := c.Params("assetId", "")
 	if assetId_ == "" {
@@ -184,11 +184,11 @@ func UpdateAsset(c *fiber.Ctx) error {
 
 func GetAssetBarcodes(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	assetId_ := c.Params("assetId", "")
 	if assetId_ == "" {
@@ -220,11 +220,11 @@ type CreateAssetBarcodeRequest struct {
 
 func CreateAssetBarcode(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	assetId_ := c.Params("assetId", "")
 	if assetId_ == "" {
@@ -270,11 +270,11 @@ func CreateAssetBarcode(c *fiber.Ctx) error {
 
 func DeleteAssetBarcode(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	assetId_ := c.Params("assetId", "")
 	if assetId_ == "" {
@@ -318,11 +318,11 @@ func DeleteAssetBarcode(c *fiber.Ctx) error {
 
 func DeleteAsset(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	assetId_ := c.Params("assetId", "")
 	if assetId_ == "" {
@@ -355,17 +355,17 @@ func DeleteAsset(c *fiber.Ctx) error {
 
 func GetAssetByBarcode(c *fiber.Ctx) error {
 	org, auth := common.GetOrgAndAuthorize(c)
-	if org == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
 	if auth == false {
 		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if org == nil {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	tagId := c.Params("barcode", "")
 	if tagId == "" {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	asset, err := data.GetAssetByTag(tagId, org.ID)
+	asset, err := data.GetAssetExpandedByTag(tagId, org.ID)
 	if err != nil {
 		fmt.Printf("got error in GetAssetByBarcode: %s\n", err) // TODO implement logging system
 		return c.SendStatus(fiber.StatusInternalServerError)

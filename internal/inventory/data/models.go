@@ -34,7 +34,7 @@ type AssetTag struct {
 	data.SnowflakeModel
 	TagId          string `json:"tagId"`
 	AssetId        int64  `json:"assetId,string"`
-	Asset          Asset  `json:"asset,omitempty"`
+	Asset          Asset  `json:"-"`
 	OrganizationId int64  `json:"organizationId,string"`
 }
 

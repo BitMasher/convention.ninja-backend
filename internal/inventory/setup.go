@@ -67,13 +67,13 @@ func setupAssets(assetsGrp fiber.Router) {
 
 	assetsGrp.Patch("/:assetId", business.UpdateAsset)
 
+	assetsGrp.Delete("/:assetId", business.DeleteAsset)
+
 	assetsGrp.Get("/:assetId/barcodes", business.GetAssetBarcodes)
 
 	assetsGrp.Post("/:assetId/barcodes", business.CreateAssetBarcode)
 
 	assetsGrp.Delete("/:assetId/barcodes/:barcodeId", business.DeleteAssetBarcode)
-
-	assetsGrp.Delete("/:assetId", business.DeleteAsset)
 
 	assetsGrp.Get("/barcode/:barcode", business.GetAssetByBarcode)
 }
@@ -109,7 +109,7 @@ func setupModels(modelsGrp fiber.Router) {
 
 	modelsGrp.Get("/:modelId", business.GetModel)
 
-	modelsGrp.Put("/:modelId", business.UpdateModel)
+	modelsGrp.Patch("/:modelId", business.UpdateModel)
 
 	modelsGrp.Delete("/:modelId", business.DeleteModel)
 }

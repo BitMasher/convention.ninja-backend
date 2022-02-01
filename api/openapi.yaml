@@ -1,58 +1,1014 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
   title: convention.ninja API
   version: 0.0.1-alpha
   description: |
     Convention ninja is a community for convention volunteers and a management suite for convention back of house
 paths:
-  /user:
-    summary: Details about the currently authenticated user
+  /api/users:
     get:
-      summary: Gets the details of the currently logged in user
+      summary: TBD
       responses:
+        500:
+          description: No Implemented
         401:
-          description: Not Authorized
+          description: unauthorized
+    post:
+      summary: Onboards a new user account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createUserRequest'
+      responses:
+        500:
+          description: something has gone wrong
+        401:
+          description: unauthorized
+        409:
+          description: user has already been created or contact email already exists
+        400:
+          description: request parameters are not complete or invalid
         200:
-          $ref: '#/components/responses/userResponse'
-  /orgs:
+          description: user has been successfully onboarded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user'
+  /api/users/me:
     get:
-      summary: Gets the list of orgs registered to the site
+      summary: fetch the user details for the logged in user
       responses:
+        500:
+          description: something has gone wrong
         401:
-          description: Not Authorized
+          description: unauthorized
         200:
-          $ref: '#/components/responses/getOrdsResponse'
-
+          description: successfully fetched the user details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user'
+    delete:
+      summary: delete your user account
+      responses:
+        500:
+          description: something has gone wrong
+        401:
+          description: unauthorized
+        200:
+          description: successfully deleted user account
+  /api/users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        description: the id of the user you are acting on
+        required: true
+        schema:
+          type: string
+    get:
+      description: get a user by their id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        200:
+          description: successfully fetched user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user'
+    patch:
+      description: update user by their id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateUserRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: the request parameters were invalid
+        200:
+          description: successfully updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user'
+  /api/orgs:
+    get:
+      description: gets the list of organizations the user is authorized to
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        200:
+          description: successfully retrieved the list of organizations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/organization'
+    post:
+      description: creates a new organization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createOrganizationRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: the request body was invalid
+        409:
+          description: an organization with that name already exists
+        200:
+          description: successfully created the organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/organization'
+  /api/orgs/{orgId}:
+    parameters:
+      - name: orgId
+        description: the id of the organization being acted upon
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: fetch an organization by its id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: the organization id could not be found
+        200:
+          description: successfully fetched organization by id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/organization'
+    patch:
+      description: update an organization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateOrganizationRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: the request body was invalid
+        409:
+          description: an organization with the requested name already exists
+        200:
+          description: successfully updated the organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/organization'
+    delete:
+      description: deletes an organization by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization id not found
+        200:
+          description: the organization has successfully been deleted
+  /api/orgs/{orgId}/inventory/manufacturers:
+    parameters:
+      - name: orgId
+        description: the organization id the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: gets the list of manufacturers configured for organization
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization not found
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/manufacturer'
+    post:
+      description: creats a new manufacturer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createManufacturerRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: invalid request body
+        409:
+          description: manufacturer already exists in this org
+        200:
+          description: successfully created manufacturer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/manufacturer'
+  /api/orgs/{orgId}/inventory/manufacturers/{mfgId}:
+    parameters:
+      - name: orgId
+        description: the organization id the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+      - name: mfgId
+        description: the manufacturer id the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: gets manufacturer by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: manufacturer id could not be found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/manufacturer'
+    put:
+      description: replaces manufacturer at id with new value
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateManufacturerRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: bad request body
+        409:
+          description: manufacturer already exists in org
+        200:
+          description: successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/manufacturer'
+    delete:
+      description: deletes a manufacturer from the org
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: manufacturer id could not be found
+        200:
+          description: successfully deleted manufacturer
+  /api/orgs/{orgId}/inventory/categories:
+    parameters:
+      - name: orgId
+        description: the organization id the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: gets the list of categories configured for organization
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization not found
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/category'
+    post:
+      description: creats a new category
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createCategoryRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: invalid request body
+        409:
+          description: category already exists in this org
+        200:
+          description: successfully created category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/category'
+  /api/orgs/{orgId}/inventory/categories/{catId}:
+    parameters:
+      - name: orgId
+        description: the organization id the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+      - name: catId
+        description: the category id the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: gets category by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: category id could not be found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/category'
+    put:
+      description: replaces category at id with new value
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateCategoryRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: bad request body
+        409:
+          description: category already exists in org
+        200:
+          description: successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/category'
+    delete:
+      description: deletes a category from the org
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: category id could not be found
+        200:
+          description: successfully deleted category
+  /api/orgs/{orgId}/inventory/models:
+    parameters:
+      - name: orgId
+        description: the organization id the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: gets the list of models configured for organization
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization not found
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/model'
+    post:
+      description: creats a new model
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createModelRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: invalid request body
+        409:
+          description: model already exists in this org
+        200:
+          description: successfully created model
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/model'
+  /api/orgs/{orgId}/inventory/models/{modelId}:
+    parameters:
+      - name: orgId
+        description: the organization id the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+      - name: modelId
+        description: the model id the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: gets model by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: model id could not be found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/model'
+    patch:
+      description: replaces model at id with new value
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateModelRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: bad request body
+        409:
+          description: model already exists in org
+        200:
+          description: successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/model'
+    delete:
+      description: deletes a model from the org
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: model id could not be found
+        200:
+          description: successfully deleted model
+  /api/orgs/{orgId}/inventory/assets:
+    parameters:
+      - name: orgId
+        description: the organization the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: gets the list of assets in the organization
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization not found
+        200:
+          description: success
+          content:
+            applicatin/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/asset'
+    post:
+      description: creates a new asset for the organization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createAssetRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization not found
+        400:
+          description: request body was not valid
+        409:
+          description: one or more asset tags already assigned within organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/asset'
+  /api/orgs/{orgId}/inventory/assets/{assetId}:
+    parameters:
+      - name: orgId
+        description: the organization the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+      - name: assetId
+        description: the asset the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: get asset by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: asset does not exist
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/asset'
+    patch:
+      description: update an asset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateAssetRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: asset does not exist
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/asset'
+    delete:
+      description: deletes an asset
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: asset does not exist
+        200:
+          description: success
+  /api/orgs/{orgId}/inventory/assets/{assetId}/barcodes:
+    parameters:
+      - name: orgId
+        description: the organization the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+      - name: assetId
+        description: the asset the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: get the asset tags for an asset
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: asset does not exist
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/assetTag'
+    post:
+      description: adds an asset tag to an asset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createAssetTagRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        409:
+          description: asset barcode already assigned within organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/assetTag'
+  /api/orgs/{orgId}/inventory/assets/{assetId}/barcodes/{barcodeId}:
+    parameters:
+      - name: orgId
+        description: the organization the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+      - name: assetId
+        description: the asset the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+      - name: barcodeId
+        description: the barcode the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+    delete:
+      description: deletes barcode from asset
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: barcode does not exist
+        200:
+          description: success
+  /api/orgs/{orgId}/inventory/assets/barcode/{barcode}:
+    parameters:
+      - name: orgId
+        description: the organization the request is scoped to
+        required: true
+        in: path
+        schema:
+          type: string
+      - name: barcode
+        description: the barcode value to search for
+        required: true
+        in: path
+        schema:
+          type: string
+    get:
+      description: search for asset by barcode
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: barcode not found
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/asset'
 components:
-  responses:
-    getOrgsResponse:
-      description: Gets the list of orgs registered to the site
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              name:
-                type: string
-              owner:
-                type: number
-    userResponse:
-      description: Details about the currently authenticated user
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - displayName
-            properties:
-              name:
-                type: string
-              displayName:
-                type: string
+  schemas:
+    createUserRequest:
+      required:
+        - name
+        - email
+      type: object
+      properties:
+        name:
+          type: string
+          example: my name
+        displayName:
+          type: string
+          example: my display name
+        email:
+          type: string
+          pattern: '@'
+          example: test@example.com
+    updateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: my name
+        displayName:
+          type: string
+          example: my display name
+        email:
+          type: string
+          pattern: '@'
+          example: test@example.com
+    user:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 10111010101
+        name:
+          type: string
+          example: my name
+        displayName:
+          type: string
+          example: my display name
+        email:
+          type: string
+          example: test@example.com
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createOrganizationRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: example organization
+    updateOrganizationRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: example organization
+    organization:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 1010101110101
+        name:
+          type: string
+          example: example organization
+        ownerId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createManufacturerRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    updateManufacturerRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    manufacturer:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 1010101110101
+        name:
+          type: string
+          example: example manufacturer
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    updateCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    category:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 1010101110101
+        name:
+          type: string
+          example: example category
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createModelRequest:
+      type: object
+      required:
+        - name
+        - manufacturerId
+        - categoryId
+      properties:
+        name:
+          type: string
+        manufacturerId:
+          type: string
+        categoryId:
+          type: string
+    updateModelRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        manufacturerId:
+          type: string
+        categoryId:
+          type: string
+    model:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 1010101110101
+        name:
+          type: string
+          example: example model
+        manufacturerId:
+          type: string
+        manufacturer:
+          $ref: '#/components/schemas/manufacturer'
+        categoryId:
+          type: string
+        category:
+          $ref: '#/components/schemas/category'
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createAssetTagRequest:
+      type: object
+      required:
+        - tagId
+      properties:
+        tagId:
+          type: string
+    assetTag:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 1010101110101
+        tagId:
+          type: string
+          example: example barcode
+        assetId:
+          type: string
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createAssetRequest:
+      type: object
+      required:
+        - modelId
+      properties:
+        serialNumber:
+          type: string
+        modelId:
+          type: string
+        assetTags:
+          type: array
+          items:
+            type: string
+    updateAssetRequest:
+      type: object
+      properties:
+        serialNumber:
+          type: string
+        modelId:
+          type: string
+    asset:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 1010101110101
+        serialNumber:
+          type: string
+          example: 1234567890123456789
+        modelId:
+          type: string
+        model:
+          $ref: '#/components/schemas/model'
+        organizationId:
+          type: string
+        assetTags:
+          type: array
+          items:
+            $ref: '#/components/schemas/assetTag'
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
 security:
-  - bearerAuth: []
+  - bearerAuth: [ ]

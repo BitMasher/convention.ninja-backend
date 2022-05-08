@@ -3,3 +3,6 @@ runtime: go116
 main: ./cmd/server
 
 service: backend
+
+env_variables:
+  SQL_DSN_KEY: projects/656645627437/secrets/sql_dsn

@@ -267,7 +267,7 @@ func UpdateAsset(asset *Asset) error {
 		return errors.New("cannot update asset that has already been deleted")
 	}
 	asset.UpdatedAt = time.Now()
-	res, err := data.GetConn().Exec("update ods.assets set serial_number = ?, model_id = ?, updated_at = ? where id = ? and organization_id = ? limit 1", asset.SerialNumber, asset.ModelId, asset.UpdatedAt, asset.ID, asset.OrganizationId)
+	res, err := data.GetConn().Exec("update ods.assets set serial_number = ?, model_id = ?, room_id = ?, updated_at = ? where id = ? and organization_id = ? limit 1", asset.SerialNumber, asset.ModelId, asset.RoomId, asset.UpdatedAt, asset.ID, asset.OrganizationId)
 	if err != nil {
 		return err
 	}

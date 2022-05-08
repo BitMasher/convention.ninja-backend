@@ -123,6 +123,7 @@ func GetAsset(c *fiber.Ctx) error {
 type UpdateAssetRequest struct {
 	SerialNumber string `json:"serialNumber"`
 	ModelId      int64  `json:"modelId,string"`
+	RoomId       int64  `json:"roomId,string"`
 }
 
 func UpdateAsset(c *fiber.Ctx) error {
@@ -172,6 +173,9 @@ func UpdateAsset(c *fiber.Ctx) error {
 	}
 	if req.ModelId != 0 {
 		asset.ModelId = req.ModelId
+	}
+	if req.RoomId != 0 {
+		asset.RoomId = req.RoomId
 	}
 	err = data.UpdateAsset(asset)
 	if err != nil {

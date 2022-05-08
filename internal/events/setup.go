@@ -9,28 +9,15 @@ import (
 func SetupRoutes(grp fiber.Router) {
 	eventsGrp := grp.Group("/orgs/:orgId/events")
 	eventsGrp.Use(auth.NewUserRequired())
-	eventsGrp.Get("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
-
-	eventsGrp.Post("/", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
-
-	eventsGrp.Get("/:eventId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
-
-	eventsGrp.Put("/:eventId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
-
-	eventsGrp.Patch("/:eventId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	setupEvents(eventsGrp)
 
 	calendarsGrp := eventsGrp.Group("/:eventId/calendar")
 
+	setupCalendars(calendarsGrp)
+
+}
+
+func setupCalendars(calendarsGrp fiber.Router) {
 	calendarsGrp.Get("/", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
@@ -50,43 +37,26 @@ func SetupRoutes(grp fiber.Router) {
 	calendarsGrp.Patch("/:calendarId", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
+}
 
-	venuesGrp := eventsGrp.Group("/venues")
-
-	venuesGrp.Get("/", func(c *fiber.Ctx) error {
+func setupEvents(eventsGrp fiber.Router) {
+	eventsGrp.Get("/", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
 
-	venuesGrp.Post("/", func(c *fiber.Ctx) error {
+	eventsGrp.Post("/", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
 
-	venuesGrp.Get("/:venueId", func(c *fiber.Ctx) error {
+	eventsGrp.Get("/:eventId", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
 
-	venuesGrp.Patch("/:venueId", func(c *fiber.Ctx) error {
+	eventsGrp.Put("/:eventId", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
 
-	venuesGrp.Put("/:venueId", func(c *fiber.Ctx) error {
+	eventsGrp.Patch("/:eventId", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
-
-	venuesGrp.Delete("/:venueId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
-
-	venuesGrp.Get("/:venueId/locations", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
-
-	venuesGrp.Put("/:venueId/locations", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
-
-	venuesGrp.Delete("/:venueId/locations/:locationId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
-
 }

@@ -740,6 +740,599 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/asset'
+  /api/orgs/{orgId}/events:
+    parameters:
+      - name: orgId
+        required: true
+        in: path
+        description: the organization this request is scoped to
+        schema:
+          type: string
+    get:
+      description: gets the list of events configured for this organization
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization not found
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/event'
+    post:
+      description: creates a new event for the organization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createEventRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization not found
+        400:
+          description: request body is invalid
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event'
+  /api/orgs/{orgId}/events/{eventId}:
+    parameters:
+      - name: orgId
+        required: true
+        in: path
+        description: organization this request is scoped to
+        schema:
+          type: string
+      - name: eventId
+        required: true
+        in: path
+        description: event this request is scoped to
+        schema:
+          type: string
+    get:
+      description: get an event by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: event not found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event'
+    patch:
+      description: update an event by id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateEventRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: event not found in organization
+        400:
+          description: request body is not valid
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event'
+    delete:
+      description: delete an event by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: event not found in organization
+        200:
+          description: success
+  /api/orgs/{orgId}/events/{eventId}/schedules:
+    parameters:
+      - name: orgId
+        required: true
+        in: path
+        description: organization this request is scoped to
+        schema:
+          type: string
+      - name: eventId
+        required: true
+        in: path
+        description: event this request is scoped to
+        schema:
+          type: string
+    get:
+      description: gets the schedules configured for this event
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: event not found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/eventSchedule'
+    post:
+      description: create a new schedule for this event
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createEventScheduleRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: event not found in organization
+        400:
+          description: request body is not valid
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/eventSchedule'
+  /api/orgs/{orgId}/events/{eventId}/schedules/{scheduleId}:
+    parameters:
+      - name: orgId
+        in: path
+        required: true
+        description: the organization this request is scoped to
+        schema:
+          type: string
+      - name: eventId
+        in: path
+        required: true
+        description: the event this request is scoped to
+        schema:
+          type: string
+      - name: scheduleId
+        in: path
+        required: true
+        description: the schedule this request is scoped to
+        schema:
+          type: string
+    get:
+      description: gets a schedule by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: schedule or event not found in org
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/eventSchedule'
+    patch:
+      description: updates a schedule by id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateEventScheduleRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: schedule or event not found in organization
+        400:
+          description: request body not valid
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/eventSchedule'
+    delete:
+      description: delete schedule by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: schedule or event not found in organization
+        200:
+          description: success
+  /api/orgs/{orgId}/events/{eventId}/schedules/{scheduleId}/entries:
+    parameters:
+      - name: orgId
+        in: path
+        required: true
+        description: the organization this request is scoped to
+        schema:
+          type: string
+      - name: eventId
+        in: path
+        required: true
+        description: the event this request is scoped to
+        schema:
+          type: string
+      - name: scheduleId
+        in: path
+        required: true
+        description: the schedule this request is scoped to
+        schema:
+          type: string
+    get:
+      description: gets a schedule entry by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: the schedule or event not found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/eventScheduleEntry'
+    post:
+      description: adds an entry to the schedule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createEventScheduleEntryRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: schedule or event not found in organization
+        400:
+          description: request body not valid
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/eventScheduleEntry'
+  /api/orgs/{orgId}/events/{eventId}/schedules/{scheduleId}/entries/{entryId}:
+    parameters:
+      - name: orgId
+        in: path
+        required: true
+        description: the organization this request is scoped to
+        schema:
+          type: string
+      - name: eventId
+        in: path
+        required: true
+        description: the event this request is scoped to
+        schema:
+          type: string
+      - name: scheduleId
+        in: path
+        required: true
+        description: the schedule this request is scoped to
+        schema:
+          type: string
+      - name: entryId
+        in: path
+        required: true
+        description: the entry this request is scoped to
+        schema:
+          type: string
+    get:
+      description: gets an entry by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: entry, schedule, or event not found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/eventScheduleEntry'
+    patch:
+      description: updates an entry by id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateEventScheduleEntryRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: entry, schedule, or event not found in organization
+        400:
+          description: request body not valid
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/eventScheduleEntry'
+    delete:
+      description: delete an entry by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: entry, schedule, or event not found in organization
+        200:
+          description: success
+  /api/orgs/{orgId}/events/venues:
+    parameters:
+      - name: orgId
+        required: true
+        description: the organization this request is scoped to
+        in: path
+        schema:
+          type: string
+    get:
+      description: gets the list of venues configured for this organization
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization does not exist
+        200:
+          description: success
+          content:
+            applicatin/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/venue'
+    post:
+      description: create a new venue
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createVenueRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: organization does not exist
+        400:
+          description: request body is not valid
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/venue'
+  /api/orgs/{orgId}/events/venues/{venueId}:
+    parameters:
+      - name: orgId
+        description: the organization the request is scoped to
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: venueId
+        description: the venue the request is scoped to
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: fetch a venue by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: venue does not exist in org
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/venue'
+    patch:
+      description: update a venue by id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateVenueRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: invalid request body
+        404:
+          description: venue does not exist in org
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/venue'
+    delete:
+      description: deletes a venue by id
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: venue does not exist in organization
+        200:
+          description: success
+  /api/orgs/{orgId}/events/venues/{venueId}/rooms:
+    parameters:
+      - name: orgId
+        in: path
+        required: true
+        description: the organization this request is scoped to
+        schema:
+          type: string
+      - name: venueId
+        in: path
+        required: true
+        description: the venue this request is scoped to
+        schema:
+          type: string
+    get:
+      description: gets the list of rooms in the venue
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: venue not found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/venueRoom'
+    post:
+      description: add a room to a venue
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createVenueRoomRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        400:
+          description: request body was invalid
+        404:
+          description: venue not found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/venueRoom'
+  /api/orgs/{orgId}/events/venues/{venueId}/rooms/{venueRoomId}:
+    parameters:
+      - name: orgId
+        in: path
+        required: true
+        description: the organization this request is scoped to
+        schema:
+          type: string
+      - name: venueId
+        in: path
+        required: true
+        description: the venue this request is scoped to
+        schema:
+          type: string
+      - name: venueRoomId
+        in: path
+        required: true
+        description: the venue room this request is scoped to
+        schema:
+          type: string
+    get:
+      description: gets a venue room
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: venue room or venue was not found in organization
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/venueRoom'
+    put:
+      description: update a venue room
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateVenueRoomRequest'
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: venue room or venue not found in organization
+        400:
+          description: request body invalid
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/venueRoom'
+    delete:
+      description: deletes a venue room from a venue
+      responses:
+        500:
+          description: something went wrong
+        401:
+          description: unauthorized
+        404:
+          description: venue room or venue not found in organization
+        200:
+          description: success
 components:
   schemas:
     createUserRequest:
@@ -999,6 +1592,206 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/assetTag'
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createVenueRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+    updateVenueRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+    venue:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/venueRoom'
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createVenueRoomRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    updateVenueRoomRequest:
+      type: object
+      properties:
+        name:
+          type: string
+    venueRoom:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        venueId:
+          type: string
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createEventRequest:
+      type: object
+      required:
+        - name
+        - recurring
+      properties:
+        name:
+          type: string
+        recurring:
+          type: boolean
+    updateEventRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        recurring:
+          type: boolean
+    event:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        recurring:
+          type: boolean
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createEventScheduleRequest:
+      type: object
+      required:
+        - startDate
+        - endDate
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+    updateEventScheduleRequest:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+    eventSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        eventId:
+          type: string
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+    createEventScheduleEntryRequest:
+      type: object
+      required:
+        - name
+        - startTime
+        - endTime
+        - venueRoomId
+      properties:
+        name:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        venueRoomId:
+          type: string
+    updateEventScheduleEntryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        venueRoomId:
+          type: string
+    eventScheduleEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        venueRoomId:
+          type: string
+        venueRoom:
+          $ref: '#/components/schemas/venueRoom'
+        eventId:
+          type: string
+        organizationId:
+          type: string
         createdAt:
           type: string
         updatedAt:

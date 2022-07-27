@@ -3,7 +3,6 @@ package business
 import (
 	"convention.ninja/internal/common"
 	"convention.ninja/internal/inventory/data"
-	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
@@ -26,9 +25,9 @@ func GetModels(c *fiber.Ctx) error {
 }
 
 type CreateModelRequest struct {
-	Name           string      `json:"name"`
-	ManufacturerId json.Number `json:"manufacturerId,string"`
-	CategoryId     json.Number `json:"categoryId,string"`
+	Name           string `json:"name"`
+	ManufacturerId int64  `json:"manufacturerId,string"`
+	CategoryId     int64  `json:"categoryId,string"`
 }
 
 func CreateModel(c *fiber.Ctx) error {
@@ -49,7 +48,7 @@ func CreateModel(c *fiber.Ctx) error {
 	if len(req.Name) == 0 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	exists, err := data.ModelExistsInOrg(org.ID, req.Name)
+	exists, err := data.ModelExistsInOrg(org.ID, req.Name, req.ManufacturerId)
 	if err != nil {
 		fmt.Printf("got error in CreateModel: %s\n", err) // TODO implement logging system
 		return c.SendStatus(fiber.StatusInternalServerError)
@@ -58,11 +57,7 @@ func CreateModel(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 
-	mfgId, err := req.ManufacturerId.Int64()
-	if err != nil {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-	exists, err = data.ManufacturerExistsById(mfgId, org.ID)
+	exists, err = data.ManufacturerExistsById(req.ManufacturerId, org.ID)
 	if err != nil {
 		fmt.Printf("got error in CreateModel: %s\n", err)
 		return c.SendStatus(fiber.StatusInternalServerError)
@@ -71,12 +66,7 @@ func CreateModel(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	catId, err := req.CategoryId.Int64()
-	if err != nil {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-
-	exists, err = data.CategoryExistsById(catId, org.ID)
+	exists, err = data.CategoryExistsById(req.CategoryId, org.ID)
 	if err != nil {
 		fmt.Printf("got error in CreateModel: %s\n", err)
 		return c.SendStatus(fiber.StatusInternalServerError)
@@ -87,8 +77,8 @@ func CreateModel(c *fiber.Ctx) error {
 
 	model := data.Model{
 		Name:           req.Name,
-		ManufacturerId: mfgId,
-		CategoryId:     catId,
+		ManufacturerId: req.ManufacturerId,
+		CategoryId:     req.CategoryId,
 		OrganizationId: org.ID,
 	}
 
@@ -174,7 +164,11 @@ func UpdateModel(c *fiber.Ctx) error {
 	}
 
 	if len(req.Name) > 0 {
-		exists, err := data.ModelExistsInOrg(org.ID, req.Name)
+		tmpMfg := model.ManufacturerId
+		if req.ManufacturerId > 0 {
+			tmpMfg = req.ManufacturerId
+		}
+		exists, err := data.ModelExistsInOrg(org.ID, req.Name, tmpMfg)
 		if err != nil {
 			fmt.Printf("got error in UpdateModel: %s\n", err) // TODO Implement logging system
 			return c.SendStatus(fiber.StatusInternalServerError)
@@ -194,6 +188,11 @@ func UpdateModel(c *fiber.Ctx) error {
 		if !exists {
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
+		tmpName := model.Name
+		if len(req.Name) > 0 {
+			tmpName = req.Name
+		}
+		exists, err = data.ModelExistsInOrg(org.ID, tmpName, req.ManufacturerId)
 		model.ManufacturerId = req.ManufacturerId
 	}
 	if req.CategoryId > 0 {

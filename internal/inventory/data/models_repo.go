@@ -29,7 +29,7 @@ func GetModelsByOrganization(orgId int64) (*[]Model, error) {
 }
 
 func GetModelsExpandedByOrganization(orgId int64) (*[]Model, error) {
-	rows, err := data.GetConn().Query("select m.id, m.name, m.manufacturer_id, m.category_id, m.organization_id, m.created_at, m.updated_at, m2.id, m2.name, m2.organization_id, m2.created_at, m2.updated_at, m2.deleted_at, c.id, c.name, c.organization_id, c.created_at, c.updated_at, c.deleted_at from ods.models m inner join ods.manufacturers m2 on m2.id = m.manufacturer_id inner join ods.categories c on c.id = m.category_id where m.organization_id = ? and m.deleted_at is null", orgId)
+	rows, err := data.GetConn().Query("select m.id, m.name, m.manufacturer_id, m.category_id, m.organization_id, m.created_at, m.updated_at, m2.id, m2.name, m2.organization_id, m2.created_at, m2.updated_at, m2.deleted_at, c.id, c.name, c.organization_id, c.created_at, c.updated_at, c.deleted_at from ods.models m inner join ods.manufacturers m2 on m2.id = m.manufacturer_id inner join ods.categories c on c.id = m.category_id where m.organization_id = ? and m.deleted_at is null order by m.id", orgId)
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +55,8 @@ func GetModelsExpandedByOrganization(orgId int64) (*[]Model, error) {
 	return &models, nil
 }
 
-func ModelExistsInOrg(orgId int64, name string) (bool, error) {
-	rows, err := data.GetConn().Query("select count(id) from ods.models where organization_id = ? and name = ? and deleted_at is null", orgId, name)
+func ModelExistsInOrg(orgId int64, name string, mfgId int64) (bool, error) {
+	rows, err := data.GetConn().Query("select count(id) from ods.models where organization_id = ? and name = ? and manufacturer_id = ? and deleted_at is null", orgId, name, mfgId)
 	if err != nil {
 		return false, err
 	}

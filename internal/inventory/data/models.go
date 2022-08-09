@@ -44,7 +44,7 @@ type Asset struct {
 	ModelId        int64              `json:"modelId,string"`
 	Model          Model              `json:"model,omitempty"`
 	SerialNumber   string             `json:"serialNumber"`
-	RoomId         int64              `json:"roomId,string"`
+	RoomId         string             `json:"roomId"`
 	OrganizationId int64              `json:"organizationId,string"`
 	Organization   data2.Organization `json:"-"`
 	AssetTags      []AssetTag         `json:"assetTags,omitempty"`
@@ -52,7 +52,7 @@ type Asset struct {
 
 type Manifest struct {
 	data.SnowflakeModel
-	RoomId                   sql.NullInt64   `json:"locationId"`
+	RoomId                   string          `json:"locationId"`
 	ResponsibleUserId        sql.NullInt64   `json:"responsibleUserId"`
 	ResponsibleExternalParty sql.NullString  `json:"responsibleExternalParty"`
 	ShipDate                 sql.NullTime    `json:"shipDate"`

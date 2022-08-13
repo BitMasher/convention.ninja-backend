@@ -349,11 +349,6 @@ func DeleteAsset(c *fiber.Ctx) error {
 		fmt.Printf("got error in DeleteAsset: %s\n", err) // TODO implement logging system
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
-	err = data.DeleteAssetTagsByAssetId(assetId, org.ID)
-	if err != nil {
-		fmt.Printf("got error in DeleteAsset: %s\n", err) // TODO implement logging system
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
 	return c.SendStatus(fiber.StatusOK)
 }
 

@@ -65,6 +65,7 @@ type ManifestEntry struct {
 	data.SnowflakeModel
 	ManifestId     int64 `json:"manifestId"`
 	AssetId        int64 `json:"assetId"`
+	Asset          Asset `json:"asset,omitempty"`
 	OrganizationId int64 `json:"organizationId"`
 }
 

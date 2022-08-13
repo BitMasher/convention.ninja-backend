@@ -417,20 +417,7 @@ func DeleteAsset(asset *Asset) error {
 	if count != 1 {
 		return errors.New("expected one row affected got different")
 	}
-	return nil
-}
-
-func DeleteAssetTagsByAssetId(assetId int64, orgId ...int64) error {
-	var err error
-	dt := sql.NullTime{
-		Time:  time.Now(),
-		Valid: true,
-	}
-	if len(orgId) > 0 {
-		_, err = data.GetConn().Exec("update ods.asset_tags set deleted_at = ? where asset_id = ? and organization_id = ? and deleted_at is null", dt, assetId, orgId[0])
-	} else {
-		_, err = data.GetConn().Exec("update ods.asset_tags set deleted_at = ? where asset_id = ? and deleted_at is null", dt, assetId)
-	}
+	_, err = data.GetConn().Exec("update ods.asset_tags set deleted_at = ? where asset_id = ? and deleted_at is null", asset.DeletedAt, asset.ID)
 	if err != nil {
 		return err
 	}

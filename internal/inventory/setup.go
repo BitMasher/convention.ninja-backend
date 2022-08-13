@@ -45,17 +45,15 @@ func setupManifests(manifestsGrp fiber.Router) {
 
 	manifestsGrp.Delete("/:manifestId", business.DeleteManifest)
 
-	manifestsGrp.Get("/:manifestId/assets", business.GetManifestAssets)
+	manifestsGrp.Get("/:manifestId/entries", business.GetManifestAssets)
 
-	manifestsGrp.Post("/:manifestId/assets", business.AddAssetToManifest)
+	manifestsGrp.Post("/:manifestId/entries", business.AddAssetToManifest)
 
-	manifestsGrp.Put("/:manifestId/assets", func(c *fiber.Ctx) error {
+	manifestsGrp.Put("/:manifestId/entries", func(c *fiber.Ctx) error {
 		return errors.New("not implemented") // TODO
 	})
 
-	manifestsGrp.Delete("/:manifestId/assets/:assetId", func(c *fiber.Ctx) error {
-		return errors.New("not implemented") // TODO
-	})
+	manifestsGrp.Delete("/:manifestId/entries/:entryId", business.DeleteManifestEntry)
 }
 
 func setupAssets(assetsGrp fiber.Router) {

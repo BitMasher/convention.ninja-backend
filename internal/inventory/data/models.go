@@ -4,6 +4,9 @@ import (
 	"convention.ninja/internal/data"
 	data2 "convention.ninja/internal/organizations/data"
 	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 )
 
 type Manufacturer struct {
@@ -52,25 +55,59 @@ type Asset struct {
 
 type Manifest struct {
 	data.SnowflakeModel
-	RoomId                   string          `json:"locationId"`
+	RoomId                   sql.NullString  `json:"locationId"`
 	ResponsibleUserId        sql.NullInt64   `json:"responsibleUserId"`
-	ResponsibleExternalParty sql.NullString  `json:"responsibleExternalParty"`
+	ResponsibleExternalParty ExternalParty   `json:"responsibleExternalParty"`
 	ShipDate                 sql.NullTime    `json:"shipDate"`
-	OrganizationId           int64           `json:"organizationId"`
-	CreatorId                int64           `json:"creatorId"`
+	OrganizationId           int64           `json:"organizationId,string"`
+	CreatorId                int64           `json:"creatorId,string"`
 	Entries                  []ManifestEntry `json:"entries"`
 }
 
 type ManifestEntry struct {
 	data.SnowflakeModel
-	ManifestId     int64 `json:"manifestId"`
-	AssetId        int64 `json:"assetId"`
+	ManifestId     int64 `json:"manifestId,string"`
+	AssetId        int64 `json:"assetId,string"`
 	Asset          Asset `json:"asset,omitempty"`
-	OrganizationId int64 `json:"organizationId"`
+	OrganizationId int64 `json:"organizationId,string"`
 }
 
 type ExternalPartyIdentifier struct {
 	data.SnowflakeModel
 	Fields         string `json:"fields"`
 	OrganizationId int64  `json:"organizationId,string"`
+}
+
+type ExternalParty struct {
+	Name  string `json:"name"`
+	Extra string `json:"extra"`
+	Valid bool   `json:"valid"`
+}
+
+func (e *ExternalParty) Scan(src interface{}) error {
+	var source []byte
+	_m := ExternalParty{}
+
+	switch src.(type) {
+	case []uint8:
+		source = src.([]uint8)
+	case nil:
+		return nil
+	default:
+		return errors.New("incompatible type for ExternalParty")
+	}
+	err := json.Unmarshal(source, &_m)
+	if err != nil {
+		return err
+	}
+	_m.Valid = true
+	*e = _m
+	return nil
+}
+
+func (e ExternalParty) Value() (driver.Value, error) {
+	if len(e.Name) == 0 && len(e.Extra) == 0 {
+		return driver.Value(nil), nil
+	}
+	return json.Marshal(e)
 }

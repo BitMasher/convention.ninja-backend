@@ -4,6 +4,7 @@ import (
 	"convention.ninja/internal/common"
 	"convention.ninja/internal/inventory/data"
 	userData "convention.ninja/internal/users/data"
+	"database/sql"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
@@ -35,7 +36,8 @@ func CreateManifest(c *fiber.Ctx) error {
 	}
 
 	manifest := data.Manifest{
-		CreatorId: c.Locals("user").(*userData.User).ID,
+		CreatorId:      c.Locals("user").(*userData.User).ID,
+		OrganizationId: org.ID,
 	}
 	err := data.CreateManifest(&manifest)
 	if err != nil {
@@ -73,7 +75,8 @@ func GetManifest(c *fiber.Ctx) error {
 }
 
 type UpdateManifestRequest struct {
-	RoomId string `json:"roomId"`
+	RoomId                   string             `json:"roomId"`
+	ResponsibleExternalParty data.ExternalParty `json:"responsibleExternalParty"`
 }
 
 func UpdateManifest(c *fiber.Ctx) error {
@@ -105,8 +108,21 @@ func UpdateManifest(c *fiber.Ctx) error {
 	if manifest == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	if manifest.RoomId != req.RoomId {
-		manifest.RoomId = req.RoomId
+	changed := false
+	if manifest.RoomId.String != req.RoomId {
+		manifest.RoomId = sql.NullString{
+			String: req.RoomId,
+			Valid:  len(req.RoomId) > 0,
+		}
+		changed = true
+	}
+	if manifest.ResponsibleExternalParty.Name != req.ResponsibleExternalParty.Name || manifest.ResponsibleExternalParty.Extra != req.ResponsibleExternalParty.Extra {
+		manifest.ResponsibleExternalParty.Name = req.ResponsibleExternalParty.Name
+		manifest.ResponsibleExternalParty.Extra = req.ResponsibleExternalParty.Extra
+		manifest.ResponsibleExternalParty.Valid = len(req.ResponsibleExternalParty.Name) > 0 || len(req.ResponsibleExternalParty.Extra) > 0
+		changed = true
+	}
+	if changed {
 		err = data.UpdateManifest(manifest)
 		if err != nil {
 			fmt.Printf("got error in UpdateManifest: %s\n", err) // TODO implement logging system
@@ -318,6 +334,14 @@ func AddAssetToManifest(c *fiber.Ctx) error {
 		}
 		manifestEntry.AssetId = asset.ID
 		manifestEntry.Asset = *asset
+	}
+	exists, err := data.AssetExistsInManifest(org.ID, manifest.ID, manifestEntry.AssetId)
+	if err != nil {
+		fmt.Printf("got error in AddAssetToManifest: %s\n", err) // TODO implement logging system
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if exists {
+		return c.SendStatus(fiber.StatusConflict)
 	}
 	err = data.AddEntryToManifest(&manifestEntry)
 	if err != nil {

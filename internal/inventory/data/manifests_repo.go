@@ -9,7 +9,7 @@ import (
 )
 
 func GetOpenManifestsByOrganization(orgId int64) (*[]Manifest, error) {
-	rows, err := data.GetConn().Query("select id, room_id, ship_date, creator_id, organization_id, created_at, updated_at from ods.manifests m where m.organization_id = ? and deleted_at is null and ship_date is null", orgId)
+	rows, err := data.GetConn().Query("select id, room_id, responsible_external_party, ship_date, creator_id, organization_id, created_at, updated_at from ods.manifests m where m.organization_id = ? and deleted_at is null and ship_date is null", orgId)
 	if err != nil {
 		return nil, err
 	}
@@ -17,7 +17,7 @@ func GetOpenManifestsByOrganization(orgId int64) (*[]Manifest, error) {
 	manifests := make([]Manifest, 0)
 	for rows.Next() {
 		manifest := Manifest{}
-		if err = rows.Scan(&manifest.ID, manifest.RoomId, manifest.ShipDate, manifest.CreatorId, manifest.OrganizationId, manifest.CreatedAt, manifest.UpdatedAt); err != nil {
+		if err = rows.Scan(&manifest.ID, &manifest.RoomId, &manifest.ResponsibleExternalParty, &manifest.ShipDate, &manifest.CreatorId, &manifest.OrganizationId, &manifest.CreatedAt, &manifest.UpdatedAt); err != nil {
 			return nil, err
 		}
 		manifests = append(manifests, manifest)
@@ -52,9 +52,9 @@ func GetManifestById(id int64, orgId ...int64) (*Manifest, error) {
 	var rows *sql.Rows
 	var err error
 	if len(orgId) > 0 {
-		rows, err = data.GetConn().Query("select m.id, m.room_id, m.ship_date, m.creator_id, m.organization_id, m.created_at, m.updated_at from ods.manifests m where m.id = ? and m.organization_id = ? and m.deleted_at is null", id, orgId[0])
+		rows, err = data.GetConn().Query("select m.id, m.room_id, m.responsible_external_party, m.ship_date, m.creator_id, m.organization_id, m.created_at, m.updated_at from ods.manifests m where m.id = ? and m.organization_id = ? and m.deleted_at is null", id, orgId[0])
 	} else {
-		rows, err = data.GetConn().Query("select m.id, m.room_id, m.ship_date, m.creator_id, m.organization_id, m.created_at, m.updated_at from ods.manifests m where m.id = ? and m.deleted_at is null", id)
+		rows, err = data.GetConn().Query("select m.id, m.room_id, m.responsible_external_party, m.ship_date, m.creator_id, m.organization_id, m.created_at, m.updated_at from ods.manifests m where m.id = ? and m.deleted_at is null", id)
 	}
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func GetManifestById(id int64, orgId ...int64) (*Manifest, error) {
 	defer rows.Close()
 	manifest := Manifest{}
 	if rows.Next() {
-		if err = rows.Scan(&manifest.ID, &manifest.RoomId, &manifest.ShipDate, &manifest.CreatorId, &manifest.OrganizationId, &manifest.CreatedAt, &manifest.UpdatedAt); err != nil {
+		if err = rows.Scan(&manifest.ID, &manifest.RoomId, &manifest.ResponsibleExternalParty, &manifest.ShipDate, &manifest.CreatorId, &manifest.OrganizationId, &manifest.CreatedAt, &manifest.UpdatedAt); err != nil {
 			return nil, err
 		}
 		manifest.Entries = make([]ManifestEntry, 0)
@@ -146,7 +146,7 @@ func UpdateManifest(manifest *Manifest) error {
 		return errors.New("cannot update manifest that has already been deleted")
 	}
 	manifest.UpdatedAt = time.Now()
-	res, err := data.GetConn().Exec("update ods.manifests set room_id = ?, updated_at = ? where id = ? and deleted_at is null", manifest.RoomId, manifest.UpdatedAt, manifest.ID)
+	res, err := data.GetConn().Exec("update ods.manifests set room_id = ?, responsible_external_party = ?, updated_at = ? where id = ? and deleted_at is null", manifest.RoomId, manifest.ResponsibleExternalParty, manifest.UpdatedAt, manifest.ID)
 	if err != nil {
 		return err
 	}
@@ -167,12 +167,15 @@ func ShipManifest(manifest *Manifest) error {
 	if manifest.ShipDate.Valid {
 		return errors.New("cannot ship manifest that has already been shipped")
 	}
+	if !manifest.RoomId.Valid && !manifest.ResponsibleExternalParty.Valid {
+		return errors.New("cannot ship manifest with no destination")
+	}
 	manifest.ShipDate = sql.NullTime{
 		Valid: true,
 		Time:  time.Now(),
 	}
 	manifest.UpdatedAt = time.Now()
-	res, err := data.GetConn().Exec("update ods.assets a inner join ods.manifest_entries e on e.asset_id = a.id inner join ods.manifests m on m.id = e.manifest_id set a.room_id = m.room_id, a.updated_at = ? where a.deleted_at is null and e.deleted_at is null and e.manifest_id = ? and m.deleted_at is null", manifest.UpdatedAt, manifest.ID)
+	res, err := data.GetConn().Exec("update ods.assets a inner join ods.manifest_entries e on e.asset_id = a.id inner join ods.manifests m on m.id = e.manifest_id set a.room_id = coalesce(m.room_id,concat('manifest:', m.id)), a.updated_at = ? where a.deleted_at is null and e.deleted_at is null and e.manifest_id = ? and m.deleted_at is null", manifest.UpdatedAt, manifest.ID)
 	if err != nil {
 		return err
 	}
@@ -251,9 +254,9 @@ func GetManifestEntriesExpanded(manifestId int64, orgId ...int64) (*[]ManifestEn
 	var rows *sql.Rows
 	var err error
 	if len(orgId) > 0 {
-		rows, err = data.GetConn().Query("select e.id, e.manifest_id, e.asset_id, e.created_at, e.updated_at, a.id, a.model_id, a.serial_number, a.room_id, a.created_at, a.updated_at, m2.id, m2.name, m2.manufacturer_id, m2.category_id, m2.created_at, m2.updated_at, c.id, c.name, c.created_at, c.updated_at, m3.id, m3.name, m3.created_at, m3.updated_at from ods.manifest_entries e inner join ods.assets a on a.id = e.asset_id inner join ods.models m2 on m2.id = a.model_id inner join ods.categories c on c.id = m2.category_id inner join ods.manufacturers m3 on m3.id = m2.manufacturer_id where e.manifest_id = ? and e.organization_id = ? and e.deleted_at is null", manifestId, orgId[0])
+		rows, err = data.GetConn().Query("select e.id, e.manifest_id, e.asset_id, e.created_at, e.updated_at, e.organization_id, a.id, a.model_id, a.serial_number, a.room_id, a.created_at, a.updated_at, m2.id, m2.name, m2.manufacturer_id, m2.category_id, m2.created_at, m2.updated_at, c.id, c.name, c.created_at, c.updated_at, m3.id, m3.name, m3.created_at, m3.updated_at from ods.manifest_entries e inner join ods.assets a on a.id = e.asset_id inner join ods.models m2 on m2.id = a.model_id inner join ods.categories c on c.id = m2.category_id inner join ods.manufacturers m3 on m3.id = m2.manufacturer_id where e.manifest_id = ? and e.organization_id = ? and e.deleted_at is null", manifestId, orgId[0])
 	} else {
-		rows, err = data.GetConn().Query("select e.id, e.manifest_id, e.asset_id, e.created_at, e.updated_at, a.id, a.model_id, a.serial_number, a.room_id, a.created_at, a.updated_at, m2.id, m2.name, m2.manufacturer_id, m2.category_id, m2.created_at, m2.updated_at, c.id, c.name, c.created_at, c.updated_at, m3.id, m3.name, m3.created_at, m3.updated_at from ods.manifest_entries e inner join ods.assets a on a.id = e.asset_id inner join ods.models m2 on m2.id = a.model_id inner join ods.categories c on c.id = m2.category_id inner join ods.manufacturers m3 on m3.id = m2.manufacturer_id where e.manifest_id = ? and e.deleted_at is null", manifestId)
+		rows, err = data.GetConn().Query("select e.id, e.manifest_id, e.asset_id, e.created_at, e.updated_at, e.organization_id, a.id, a.model_id, a.serial_number, a.room_id, a.created_at, a.updated_at, m2.id, m2.name, m2.manufacturer_id, m2.category_id, m2.created_at, m2.updated_at, c.id, c.name, c.created_at, c.updated_at, m3.id, m3.name, m3.created_at, m3.updated_at from ods.manifest_entries e inner join ods.assets a on a.id = e.asset_id inner join ods.models m2 on m2.id = a.model_id inner join ods.categories c on c.id = m2.category_id inner join ods.manufacturers m3 on m3.id = m2.manufacturer_id where e.manifest_id = ? and e.deleted_at is null", manifestId)
 	}
 	if err != nil {
 		return nil, err
@@ -262,12 +265,14 @@ func GetManifestEntriesExpanded(manifestId int64, orgId ...int64) (*[]ManifestEn
 	entries := make([]ManifestEntry, 0)
 	for rows.Next() {
 		entry := ManifestEntry{}
-		asset := Asset{}
+		asset := Asset{
+			AssetTags: make([]AssetTag, 0),
+		}
 		model := Model{}
 		mfg := Manufacturer{}
 		cat := Category{}
 		if err = rows.Scan(
-			&entry.ID, &entry.ManifestId, &entry.AssetId, &entry.CreatedAt, &entry.UpdatedAt, &asset.ID, &asset.ModelId, &asset.SerialNumber, &asset.RoomId, &asset.CreatedAt, &asset.UpdatedAt, &model.ID, &model.Name, &model.ManufacturerId, &model.CategoryId, &model.CreatedAt, &model.UpdatedAt, &cat.ID, &cat.Name, &cat.CreatedAt, &cat.UpdatedAt, &mfg.ID, &mfg.Name, &mfg.CreatedAt, &mfg.UpdatedAt); err != nil {
+			&entry.ID, &entry.ManifestId, &entry.AssetId, &entry.CreatedAt, &entry.UpdatedAt, &entry.OrganizationId, &asset.ID, &asset.ModelId, &asset.SerialNumber, &asset.RoomId, &asset.CreatedAt, &asset.UpdatedAt, &model.ID, &model.Name, &model.ManufacturerId, &model.CategoryId, &model.CreatedAt, &model.UpdatedAt, &cat.ID, &cat.Name, &cat.CreatedAt, &cat.UpdatedAt, &mfg.ID, &mfg.Name, &mfg.CreatedAt, &mfg.UpdatedAt); err != nil {
 			return nil, err
 		}
 		model.Manufacturer = mfg
@@ -285,6 +290,24 @@ func GetManifestEntriesExpanded(manifestId int64, orgId ...int64) (*[]ManifestEn
 		return nil, err
 	}
 	return &entries, nil
+}
+
+func AssetExistsInManifest(orgId int64, manifestId int64, assetId int64) (bool, error) {
+	rows, err := data.GetConn().Query("select count(e.id) from ods.manifest_entries e where e.manifest_id = ? and e.organization_id = ? and e.asset_id = ? and e.deleted_at is null", manifestId, orgId, assetId)
+	if err != nil {
+		return false, err
+	}
+	if rows.Next() {
+		var c int64
+		if err = rows.Scan(&c); err != nil {
+			return false, err
+		}
+		return c > 0, nil
+	}
+	if err = rows.Err(); err != nil {
+		return false, err
+	}
+	return false, errors.New("impossible state reached")
 }
 
 func AddEntryToManifest(entry *ManifestEntry) error {
@@ -342,7 +365,7 @@ func DeleteManifestEntry(entry *ManifestEntry) error {
 		Time:  time.Now(),
 		Valid: true,
 	}
-	res, err := data.GetConn().Exec("update ods.manifest_entries e set e.deleted_at = ? where e.id = ? and e.organization_id = ? and e.deleted_at is null", entry.ID, entry.OrganizationId)
+	res, err := data.GetConn().Exec("update ods.manifest_entries e set e.deleted_at = ? where e.id = ? and e.organization_id = ? and e.deleted_at is null", entry.DeletedAt, entry.ID, entry.OrganizationId)
 	if err != nil {
 		return err
 	}

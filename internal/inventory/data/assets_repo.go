@@ -30,7 +30,7 @@ func GetAssetsByOrganization(orgId int64) (*[]Asset, error) {
 }
 
 func GetAssetsExpandedByOrganization(orgId int64) (*[]Asset, error) {
-	rows, err := data.GetConn().Query("select a.id, a.model_id, a.serial_number, a.organization_id, a.created_at, a.updated_at, m.id, m.name, m.manufacturer_id, m.category_id, m.organization_id, m.created_at, m.updated_at, m.deleted_at, m2.id, m2.name, m2.organization_id, m2.created_at, m2.updated_at, m2.deleted_at, c.id, c.name, c.organization_id, c.created_at, c.updated_at, c.deleted_at from ods.assets a inner join ods.models m on m.id = a.model_id inner join ods.manufacturers m2 on m2.id = m.manufacturer_id inner join ods.categories c on c.id = m.category_id where a.organization_id = ? and a.deleted_at is null order by a.id", orgId)
+	rows, err := data.GetConn().Query("select a.id, a.model_id, a.serial_number, a.room_id, a.organization_id, a.created_at, a.updated_at, m.id, m.name, m.manufacturer_id, m.category_id, m.organization_id, m.created_at, m.updated_at, m.deleted_at, m2.id, m2.name, m2.organization_id, m2.created_at, m2.updated_at, m2.deleted_at, c.id, c.name, c.organization_id, c.created_at, c.updated_at, c.deleted_at from ods.assets a inner join ods.models m on m.id = a.model_id inner join ods.manufacturers m2 on m2.id = m.manufacturer_id inner join ods.categories c on c.id = m.category_id where a.organization_id = ? and a.deleted_at is null order by a.id", orgId)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func GetAssetsExpandedByOrganization(orgId int64) (*[]Asset, error) {
 		mfg := Manufacturer{}
 		cat := Category{}
 		if err = rows.Scan(
-			&asset.ID, &asset.ModelId, &asset.SerialNumber, &asset.OrganizationId, &asset.CreatedAt, &asset.UpdatedAt,
+			&asset.ID, &asset.ModelId, &asset.SerialNumber, &asset.RoomId, &asset.OrganizationId, &asset.CreatedAt, &asset.UpdatedAt,
 			&model.ID, &model.Name, &model.ManufacturerId, &model.CategoryId, &model.OrganizationId, &model.CreatedAt, &model.UpdatedAt, &model.DeletedAt,
 			&mfg.ID, &mfg.Name, &mfg.OrganizationId, &mfg.CreatedAt, &mfg.UpdatedAt, &mfg.DeletedAt,
 			&cat.ID, &cat.Name, &cat.OrganizationId, &cat.CreatedAt, &cat.UpdatedAt, &cat.DeletedAt); err != nil {

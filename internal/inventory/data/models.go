@@ -47,7 +47,7 @@ type Asset struct {
 	ModelId        int64              `json:"modelId,string"`
 	Model          Model              `json:"model,omitempty"`
 	SerialNumber   string             `json:"serialNumber"`
-	RoomId         string             `json:"roomId"`
+	RoomId         sql.NullString     `json:"roomId"`
 	OrganizationId int64              `json:"organizationId,string"`
 	Organization   data2.Organization `json:"-"`
 	AssetTags      []AssetTag         `json:"assetTags,omitempty"`

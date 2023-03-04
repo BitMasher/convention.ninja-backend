@@ -108,7 +108,7 @@ func GetManifestExpandedById(id int64, orgId ...int64) (*Manifest, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer rows2.Next()
+		defer rows2.Close()
 		for rows2.Next() {
 			entry := ManifestEntry{}
 			asset := Asset{}
@@ -261,7 +261,7 @@ func GetManifestEntriesExpanded(manifestId int64, orgId ...int64) (*[]ManifestEn
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Next()
+	defer rows.Close()
 	entries := make([]ManifestEntry, 0)
 	for rows.Next() {
 		entry := ManifestEntry{}
@@ -297,6 +297,7 @@ func AssetExistsInManifest(orgId int64, manifestId int64, assetId int64) (bool, 
 	if err != nil {
 		return false, err
 	}
+	defer rows.Close()
 	if rows.Next() {
 		var c int64
 		if err = rows.Scan(&c); err != nil {

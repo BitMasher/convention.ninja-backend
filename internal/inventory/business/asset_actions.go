@@ -3,6 +3,7 @@ package business
 import (
 	"convention.ninja/internal/common"
 	"convention.ninja/internal/inventory/data"
+	"database/sql"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
@@ -175,7 +176,10 @@ func UpdateAsset(c *fiber.Ctx) error {
 		asset.ModelId = req.ModelId
 	}
 	if req.RoomId != "" {
-		asset.RoomId = req.RoomId
+		asset.RoomId = sql.NullString{
+			String: req.RoomId,
+			Valid:  true,
+		}
 	}
 	err = data.UpdateAsset(asset)
 	if err != nil {

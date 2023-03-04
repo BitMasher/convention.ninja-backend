@@ -16,7 +16,7 @@ func Connect(dsn string) error {
 	db = db_
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
+	db.SetMaxIdleConns(100)
 	return nil
 }
 

@@ -261,7 +261,7 @@ func GetManifestEntriesExpanded(manifestId int64, orgId ...int64) (*[]ManifestEn
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Next()
+	defer rows.Close()
 	entries := make([]ManifestEntry, 0)
 	for rows.Next() {
 		entry := ManifestEntry{}
